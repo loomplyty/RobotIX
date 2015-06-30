@@ -6,6 +6,8 @@
 #include "Gait.h"
  
 
+extern bool Is_CS_Connected;
+
 enum Client_Msg
 
 {
@@ -18,6 +20,7 @@ enum Client_Msg
 	VS_Connected=3,
 	VS_MAP_Received=4,
 	VS_Lost=5,
+	RT_Data_Received=10000,
 };
 
 //register is in ac_test

@@ -43,6 +43,9 @@ using namespace std;
 //
 #define MOTOR_NUM 18
 
+#include <mutex>
+
+
 
 enum EGaitState
 {
@@ -66,7 +69,8 @@ enum EGAIT
 	GAIT_TURN_LEFT=9,
 	GAIT_TURN_RIGHT=10,
 	GAIT_HOME=11,
-	GAIT_ONLINE=12
+	GAIT_ONLINE=12,
+	GAIT_TOSTANDSTILL=13
 };
 
 
@@ -78,6 +82,7 @@ public:
 	//read txt to array
 	static int InitGait(Aris::RT_CONTROL::CSysInitParameters& param);
  	static int RunGait(EGAIT* p_gait,Aris::RT_CONTROL::CMachineData& p_data);
+ 	static int GetIMUData(double * angle, double* angleVel, double* linearAcc);
 	static bool IsGaitFinished();
 	static bool IsHomeStarted[AXIS_NUMBER];
  	static bool IsConsFinished[AXIS_NUMBER];
@@ -86,18 +91,66 @@ public:
     static void  IfReadytoSetGait(bool b, int driverID);
 	static EGaitState m_gaitState[AXIS_NUMBER];
 	static CTrotGait Trot;
+	static void online_DoPID(int N,Aris::RT_CONTROL::CMachineData& p_data);
+
+	static void online_ToStandstill(int N,double* initial_screw_pos,double* screw_input);
+	static double online_angle[3];
+	static double online_angleVel[3];
+	static double online_linearAcc[3];
+
+	static double online_IMU_313[6];
+
+	static ROBOT robot;
+	static double online_static_foot_pos[18];
+	static double online_static_body_pos[6];
+	static double online_static_screw_pos[18];
+
+	static double online_ideal_foot_pos[18];
+	static double online_ideal_body_pos[6];
+
+
+    static double online_ideal_screw_vel[18];
+    static double online_last_ideal_screw_vel[18];
+	static double online_ideal_screw_pos[18];
+	static double online_last_ideal_screw_pos[18];
+	static double online_second_last_ideal_screw_pos[18];
+
+	//static double online_actual_foot_pos[18];
+	//for test
+//	static double online_screw_pos[18];
+
+///	static double online_last_ideal_screw_vel[18];
+
+	static double online_body_height;
+	static double online_stance_leg_height[2];
+	static double online_stance_leg_pos[18];
+
+
+	//test
+	static double online_ideal_screw_pos_before_PID[18];
+	static double online_ideal_foot_pos_before_PID[18];
 
 
 private:
+
+
+ //	static double online_actual_screw_pos[18];
+ //	static double online_actual_screw_vel[18];
+
+
+
+
     static bool isReadytoSetGait[AXIS_NUMBER];
 	static EGAIT m_currentGait[AXIS_NUMBER];
 	static long long int m_gaitStartTime[AXIS_NUMBER];
 	static int m_gaitCurrentIndex[AXIS_NUMBER];
+	static int m_gaitCurrentIndexForPID[AXIS_NUMBER];
 	static Aris::RT_CONTROL::CMotorData m_standStillData[AXIS_NUMBER];
 	static Aris::RT_CONTROL::CMotorData m_commandDataMapped[AXIS_NUMBER];
 	static Aris::RT_CONTROL::CMotorData m_feedbackDataMapped[AXIS_NUMBER];
 	static void MapFeedbackDataIn(Aris::RT_CONTROL::CMachineData& p_data );
 	static void MapCommandDataOut(Aris::RT_CONTROL::CMachineData& p_data );
+	static void online_trot_TargetXZ(double *IMU_angleVel,double H_robot,int LegID,double *XandZ);
 };
 
 

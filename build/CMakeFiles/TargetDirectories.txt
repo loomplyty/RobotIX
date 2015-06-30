@@ -1,0 +1,2 @@
+/home/hex/Desktop/Control_demo/build/CMakeFiles/Aris_Control_demo.dir
+/home/hex/Desktop/Control_demo/build/CMakeFiles/client.dir

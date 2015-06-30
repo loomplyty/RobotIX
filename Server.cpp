@@ -5,12 +5,10 @@
 using namespace std;
 
 using namespace Aris::Core;
-
-
-
 //static int LastCMD=-1;
 
 CONN ControlSystem, VisualSystem;
+bool Is_CS_Connected;
 
 //#include "Hexapod_Robot.h"
 
@@ -24,9 +22,10 @@ int On_CS_ConnectionReceived(Aris::Core::CONN *pConn, const char* addr,int port)
 		msg.Copy(&port,sizeof(port));
 		msg.CopyMore(addr,strlen(addr));
 		PostMsg(msg);
-	return 0;
+	    return 0;
 
 }
+
 int On_CS_DataReceived(Aris::Core::CONN *pConn, Aris::Core::MSG &data)
 {
 	    int cmd=data.GetMsgID();
@@ -47,6 +46,8 @@ int On_CS_DataReceived(Aris::Core::CONN *pConn, Aris::Core::MSG &data)
 int On_CS_ConnectionLost(Aris::Core::CONN *pConn)
 {
 	PostMsg(Aris::Core::MSG(CS_Lost));
+	Is_CS_Connected=false;
+
 	return 0;
 }
 
@@ -57,6 +58,8 @@ int On_CS_Connected(Aris::Core::MSG &msg)
 	cout<<"   Remote IP is: "<<msg.GetDataAddress()+sizeof(int)<<endl;
 	cout<<"   Port is     : "<<*((int*)msg.GetDataAddress()) << endl << endl;
 
+	Is_CS_Connected=true;
+
 	Aris::Core::MSG data(0,0);
 	ControlSystem.SendData(data);
 	return 0;
@@ -64,7 +67,6 @@ int On_CS_Connected(Aris::Core::MSG &msg)
 
 int On_CS_CMD_Received(Aris::Core::MSG &msg)
 {
-
 	MSG Command(msg);
 	Command.SetMsgID(GetControlCommand);
 	PostMsg(Command);
