@@ -16,7 +16,6 @@ enum ClienMsg
 
 int OnControlCommandNeeded(Aris::Core::MSG &msg);
 int OnSystemLost(Aris::Core::MSG &msg);
-int OnRTDataGet(Aris::Core::MSG &msg);
 
 //CONN call back
 

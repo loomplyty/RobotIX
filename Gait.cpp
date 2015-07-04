@@ -27,37 +27,12 @@ int CGait::Gait_iter_count[AXIS_NUMBER];
 bool CGait::IsConsFinished[AXIS_NUMBER];
 bool CGait::IsHomeStarted[AXIS_NUMBER];
 
-double CGait::online_ideal_foot_pos[18] ;
-double CGait::online_ideal_body_pos[6] ;
-
-double CGait::online_static_foot_pos[18];
-double CGait::online_static_body_pos[6];
-double CGait::online_static_screw_pos[18];
-
-double CGait::online_ideal_screw_vel[18];
-double CGait::online_last_ideal_screw_vel[18];
-
-double CGait::online_ideal_screw_pos[18] ;
-double CGait::online_last_ideal_screw_pos[18];
-double CGait::online_second_last_ideal_screw_pos[18];
-
-//test
-double CGait::online_ideal_screw_pos_before_PID[18];
-double CGait::online_ideal_foot_pos_before_PID[18];
-
-
-//double CGait::online_actual_screw_pos[18] ;
-//double CGait::online_actual_screw_vel[18] ;
 
 double CGait::online_angle[3];
 double CGait::online_angleVel[3];
 double CGait::online_linearAcc[3];
-double CGait::online_IMU_313[6];
-ROBOT CGait::robot;
-double CGait::online_body_height;
-double CGait::online_stance_leg_height[2];
-double CGait::online_stance_leg_pos[18];
-//double CGait::online_actual_foot_pos[18];
+ ROBOT CGait::robot;
+
 
 int Gait_online_Acc_Length;
 int Gait_online_Cons_Length;
@@ -98,24 +73,8 @@ int GaitTurnLeft[GAIT_TURN_LEN][GAIT_WIDTH];
 int GaitTurnRight[GAIT_TURN_LEN][GAIT_WIDTH];
 
 
-const int MapAbsToPhy[18]=
-{
-		10,	11,	9,
-		12,	14,	13,
-		17,	15,	16,
-		6,	8,	7,
-		3,	5,	4,
-		0,	2,	1
-};
-const int MapPhyToAbs[18]=
-{
-		15,	17,	16,
-		12,	14,	13,
-		9,	11,	10,
-		2,	0,	1,
-		3,	5,	4,
-		7,	8,	6
-};
+static int screw_init_pos[AXIS_NUMBER];
+static int screw_command_pos[AXIS_NUMBER];
 
 void CGait::MapFeedbackDataIn(Aris::RT_CONTROL::CMachineData& p_data )
 {
@@ -153,366 +112,6 @@ CGait::CGait()
 CGait::~CGait()
 {
 };
-
-int CGait::GetIMUData(double * angle, double* angleVel, double* linearAcc)
-{
-	memcpy(online_angle,angle,sizeof(double)*3);
-	memcpy(online_angleVel,angleVel,sizeof(double)*3);
-    memcpy(online_linearAcc,linearAcc,sizeof(double)*3);
-}
-
-void CGait::online_DoPID(int N,Aris::RT_CONTROL::CMachineData& p_data)//double screw_pos,double screw_vel,
-{
-//**********************************CALCULATON OF EP_ROBOT_313***************************//
-    double IMU_body_pos[6];
-    double pm_IMU2G0[4][4];
-    double ep_IMU_321[6];
-    double pm_ROBOT[4][4];
-    double ep_ROBOT_313[6];
-    static double angle_trans[3]={0,0,0};
-
-
-   // if(IMU_mutex.try_lock())
-   // {
-    	for (int i=0;i<3;i++)
-    	    {
-    	    	angle_trans[2-i]=online_angle[i];
-    	    }
-    	angle_trans[0]=PI;
-
-    	//rt_printf("suceesfully get IMU data");
-    	//IMU_mutex.unlock();
-   // }
-   // else
-   // {
-    	//rt_printf("Data is locked");
-  //  }
-    //std::u<std::mutex> lck(IMU_mutex);
-
-
-  //  memcpy(online_angle,angle_trans,sizeof(double)*3);
-    memcpy(ep_IMU_321,angle_trans,sizeof(double)*3);
-
-    double pm_G02G[4][4]=
-    {
-    		{-1,0,0,0},
-			{0,0,1,0},
-			{0,1,0,0},
-			{0,0,0,1},
-    };
- //   ep_IMU_321[0]=PI;
-    Aris::DynKer::s_ep2pm(ep_IMU_321,*pm_IMU2G0,"321");
-
-    double pm_R2IMU[4][4]=
-    {
-    		{1,0,0,0},
-    		{0,0,1,0},
-			{0,-1,0,0},
-			{0,0,0,1},
-    };
-
-    double pm_R2G0[4][4];
-    double pm_R2G[4][4];
-    Aris::DynKer::s_pm_dot_pm(*pm_IMU2G0,*pm_R2IMU,*pm_R2G0);
-    Aris::DynKer::s_pm_dot_pm(*pm_G02G,*pm_R2G0,*pm_R2G);
-    Aris::DynKer::s_pm2ep(*pm_R2G,ep_ROBOT_313,"313");
-    memcpy(online_IMU_313, ep_ROBOT_313, sizeof (double)*6);
-
-    //*************************CALCULATION OF IDEAL SCREW INPUT*****************************************************************///
-	//screw_pos count
-	//screw_vel count/s
-	double VelMax=0.23; // m/s
-	double AccMax=0.8;  // m/s^2;
-	double SafetyDistance = 0.5*(VelMax*VelMax)/AccMax;
-     //rt_printf("N=%d\n",N);
-
-    Trot.CalPee(N,online_static_foot_pos,online_static_body_pos);// foot_pos static
-    Trot.CalPin(online_static_screw_pos);
-   // rt_printf("leg phase %d %d %d %d %d %d\n",Trot.m_leg_phase[0],Trot.m_leg_phase[1],Trot.m_leg_phase[2],Trot.m_leg_phase[3],Trot.m_leg_phase[4],Trot.m_leg_phase[5]);
-
-/*    rt_printf("online static screw pos\n");
-        rt_printf("%f,%f,%f\n",online_static_screw_pos[0],online_static_screw_pos[1],online_static_screw_pos[2]);
-        rt_printf("%f,%f,%f\n",online_static_screw_pos[3],online_static_screw_pos[4],online_static_screw_pos[5]);
-        rt_printf("%f,%f,%f\n",online_static_screw_pos[6],online_static_screw_pos[7],online_static_screw_pos[8]);
-        rt_printf("%f,%f,%f\n",online_static_screw_pos[9],online_static_screw_pos[10],online_static_screw_pos[11]);
-        rt_printf("%f,%f,%f\n",online_static_screw_pos[12],online_static_screw_pos[13],online_static_screw_pos[14]);
-        rt_printf("%f,%f,%f\n",online_static_screw_pos[15],online_static_screw_pos[16],online_static_screw_pos[17]);
-*/
-
-/*  rt_printf("body pos\n");
-    rt_printf("%f,%f,%f\n",online_ideal_foot_pos[0],online_ideal_foot_pos[1],online_ideal_foot_pos[2]);
-    rt_printf("%f,%f,%f\n",online_ideal_foot_pos[3],online_ideal_foot_pos[4],online_ideal_foot_pos[5]);
-    rt_printf("%f,%f,%f\n",online_ideal_foot_pos[6],online_ideal_foot_pos[7],online_ideal_foot_pos[8]);
-*/
-    double TargetXZ[2];
-    double H0=0.85;
-    double delta_height;
-
-    double Kp_stance=10;
-    double Kp_swing=26;
-    double Ki=0;
-    double Kd=0;//minus
-
-    ETrotGaitPhase LegPhase[6];
-
-    double body_zero[6]={0, 0, 0, 0, 0, 0};
-    double IMU_angleVel[3]={0.2,0.2,0};
-    CGait::robot.SetPin(online_static_screw_pos, ep_ROBOT_313);//Set body euler & pos//,ep_ROBOT_313
-    //CGait::robot.SetPin(online_static_screw_pos,body_zero);
-
-    static int count_angle;
-    if(count_angle%10==0)
-    {
-        // rt_printf("old %f %f %f,new  %f %f %f\n",online_angle[0],online_angle[1],online_angle[2],ep_ROBOT_313[0],ep_ROBOT_313[1],ep_ROBOT_313[2]);
-
-    }
-    count_angle++;
-
-     for(int i=0;i<6;i++)
-    {
-
-    	if(Trot.m_leg_phase[i]==GaitStance)
-    	{
-    		CGait::robot.pLegs[i]->SetPin(online_static_screw_pos+3*i);
-        	CGait::robot.pLegs[i]->GetPee(online_ideal_foot_pos+3*i);
-        	if(i<=2)
-        		online_stance_leg_height[0]=-online_ideal_foot_pos[3*i+1];//destination of y for swing leg
-        	else
-        		online_stance_leg_height[1]=-online_ideal_foot_pos[3*i+1];//destination of y for swing leg
-
-    	}
-    }
-    online_body_height=(online_stance_leg_height[0]+online_stance_leg_height[1])/2;
-    delta_height=H0-online_body_height;
-
-    //rt_printf("delta height:%f\n",delta_height);
-
-    if(N==0)
-    {
-    	memcpy(online_last_ideal_screw_pos,online_static_screw_pos,sizeof(double)*18);
-
-    	memcpy(online_second_last_ideal_screw_pos,online_static_screw_pos,sizeof(double)*18);
-
-    	memcpy(online_stance_leg_pos,online_static_foot_pos,sizeof(double)*18);
-    }
-   /* rt_printf("online ideal last screw pos\n");
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[0],online_last_ideal_screw_pos[1],online_last_ideal_screw_pos[2]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[3],online_last_ideal_screw_pos[4],online_last_ideal_screw_pos[5]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[6],online_last_ideal_screw_pos[7],online_last_ideal_screw_pos[8]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[9],online_last_ideal_screw_pos[10],online_last_ideal_screw_pos[11]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[12],online_last_ideal_screw_pos[13],online_last_ideal_screw_pos[14]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[15],online_last_ideal_screw_pos[16],online_last_ideal_screw_pos[17]);
-*/
-  //   rt_printf("leg phase: %d %d %d %d %d %d\n",Trot.m_leg_phase[0],Trot.m_leg_phase[1],Trot.m_leg_phase[2],Trot.m_leg_phase[3],Trot.m_leg_phase[4],Trot.m_leg_phase[5]);
-
-    for(int i=0;i<6;i++)
-     {
-    	switch(Trot.m_leg_phase[i])
-        {
-        case GaitStance:
-           // rt_printf("leg ID: %d\n",i);
-        	memcpy(online_ideal_foot_pos+3*i,online_stance_leg_pos+3*i,sizeof(double)*3);
-       //rt_printf("foot_pos before PID, %f %f %f\n",online_ideal_foot_pos[3*i],online_ideal_foot_pos[3*i+1],online_ideal_foot_pos[3*i+2]);
-            rt_printf("foot y %f\n",online_ideal_foot_pos[3*i+1]);
-        	online_ideal_foot_pos[3*i+1]=-H0;
-
-            memcpy(online_ideal_foot_pos_before_PID+3*i,online_ideal_foot_pos+3*i,sizeof(double)*3);
-
-            // rt_printf("online_body_height:%f\n",online_body_height);
-            CGait::robot.SetPee(online_ideal_foot_pos,body_zero);
-            CGait::robot.pLegs[i]->SetPee(online_ideal_foot_pos+3*i);
-            CGait::robot.pLegs[i]->GetPin(online_ideal_screw_pos+3*i);
-
-        	memcpy(online_ideal_screw_pos+3*i,online_static_screw_pos+3*i,sizeof(double)*3);
-            memcpy(online_ideal_screw_pos_before_PID+3*i,online_ideal_screw_pos+3*i,sizeof(double)*3);
-
-            for(int j=0;j<3;j++)
-            {
-            	//rt_printf("leg %d, static screw_pos %f\n",i,online_static_screw_pos[3*i+j]);
-                //rt_printf("screw_input:%f\n",online_ideal_screw_pos[3*i+j]);
-                //rt_printf("screw_last input:%f\n",online_last_ideal_screw_pos[3*i+j]);
-
-              	online_ideal_screw_vel[3*i+j]=Kp_stance*(online_ideal_screw_pos[3*i+j]-online_last_ideal_screw_pos[3*i+j])+
-            	 		                           Kd/0.001*(online_ideal_screw_pos[3*i+j]+online_second_last_ideal_screw_pos[3*i+j]-2*online_last_ideal_screw_pos[3*i+j])+
-				 								   Ki*0.001*online_ideal_screw_pos[3*i+j];
-               // rt_printf("1.screw_vel_input:%f\n",online_ideal_screw_vel[3*i+j]);
-
-            	if(online_ideal_screw_vel[3*i+j]-online_last_ideal_screw_vel[3*i+j]>AccMax*0.001)
-            		online_ideal_screw_vel[3*i+j]=online_last_ideal_screw_vel[3*i+j]+AccMax*0.001;
-            	else if(online_ideal_screw_vel[3*i+j]-online_last_ideal_screw_vel[3*i+j]<-AccMax*0.001)
-            		online_ideal_screw_vel[3*i+j]=online_last_ideal_screw_vel[3*i+j]-AccMax*0.001;
-               // rt_printf("2.screw_vel_input:%f, last vel: %f \n",online_ideal_screw_vel[3*i+j],online_last_ideal_screw_vel[3*i+j]);
-
-                if(online_ideal_screw_vel[3*i+j]>VelMax)
-            		online_ideal_screw_vel[3*i+j]=VelMax;
-            	else if(online_ideal_screw_vel[3*i+j]<-VelMax)
-            		online_ideal_screw_vel[3*i+j]=-VelMax;
-               // rt_printf("3.screw_vel_input:%f\n",online_ideal_screw_vel[3*i+j]);
-
-            	online_ideal_screw_pos[3*i+j]=online_last_ideal_screw_pos[3*i+j]+online_ideal_screw_vel[3*i+j]/1000;
-               //rt_printf("screw_input final:%f\n",online_ideal_screw_pos[3*i+j]);
-            }
-            CGait::robot.SetPee(online_ideal_foot_pos,ep_ROBOT_313);
-            CGait::robot.pLegs[i]->SetPin(online_ideal_screw_pos+3*i);
-            CGait::robot.pLegs[i]->GetPee(online_ideal_foot_pos+3*i);
-        	//rt_printf("foot_pos after PID, %f %f %f\n",online_ideal_foot_pos[3*i],online_ideal_foot_pos[3*i+1],online_ideal_foot_pos[3*i+2]);
-
-        	break;
-
-        case GaitSwing:
-
-          //  rt_printf("leg ID: %d\n",i);
-        	//CGait::robot.pLegs[i]->SetPin(online_static_screw_pos+3*i);
-           // CGait::robot.pLegs[i]->GetPee(online_ideal_foot_pos+3*i);
-
-        	memcpy(online_ideal_foot_pos+3*i,online_static_foot_pos+3*i,sizeof(double)*3);
-            online_ideal_foot_pos[3*i+1]=online_static_foot_pos[3*i+1]+delta_height;//x,z stay the same with static traj
-/*
-            //CGait::online_trot_TargetXZ(IMU_angleVel,online_body_height,i,TargetXZ);
-            CGait::online_trot_TargetXZ(online_angleVel,online_body_height,i,TargetXZ);
-            online_ideal_foot_pos[3*i]=online_static_foot_pos[3*i]+TargetXZ[0];
-            online_ideal_foot_pos[3*i+2]=online_static_foot_pos[3*i+2]+TargetXZ[1];
-*/
-        	//rt_printf("foot_pos before PID, %f %f %f\n",online_ideal_foot_pos[3*i],online_ideal_foot_pos[3*i+1],online_ideal_foot_pos[3*i+2]);
-
-            memcpy(online_ideal_foot_pos_before_PID+3*i,online_ideal_foot_pos+3*i,sizeof(double)*3);
-
-            // rt_printf("online_body_height:%f\n",online_body_height);
-
-           // CGait::robot.SetPee(online_ideal_foot_pos,ep_ROBOT_313);
-            CGait::robot.pLegs[i]->SetPee(online_ideal_foot_pos+3*i);
-            CGait::robot.pLegs[i]->GetPin(online_ideal_screw_pos+3*i);
-
-            memcpy(online_ideal_screw_pos_before_PID+3*i,online_ideal_screw_pos+3*i,sizeof(double)*3);
-
-            for(int j=0;j<3;j++)
-            {
-            	//rt_printf("leg %d, static screw_pos %f\n",i,online_static_screw_pos[3*i+j]*350*65536);
-
-               // rt_printf("screw_input:%f\n",online_ideal_screw_pos[3*i+j]);
-                //rt_printf("screw_last input:%f\n",online_last_ideal_screw_pos[3*i+j]);
-
-              	online_ideal_screw_vel[3*i+j]=Kp_swing*(online_ideal_screw_pos[3*i+j]-online_last_ideal_screw_pos[3*i+j])+
-            	 		                           Kd/0.001*(online_ideal_screw_pos[3*i+j]+online_second_last_ideal_screw_pos[3*i+j]-2*online_last_ideal_screw_pos[3*i+j])+
-				 								   Ki*0.001*online_ideal_screw_pos[3*i+j];
-                //rt_printf("1.screw_vel_input:%f\n",online_ideal_screw_vel[3*i+j]);
-
-            	if(online_ideal_screw_vel[3*i+j]-online_last_ideal_screw_vel[3*i+j]>AccMax*0.001)
-            		online_ideal_screw_vel[3*i+j]=online_last_ideal_screw_vel[3*i+j]+AccMax*0.001;
-            	else if(online_ideal_screw_vel[3*i+j]-online_last_ideal_screw_vel[3*i+j]<-AccMax*0.001)
-            		online_ideal_screw_vel[3*i+j]=online_last_ideal_screw_vel[3*i+j]-AccMax*0.001;
-               // rt_printf("2.screw_vel_input:%f, last vel: %f \n",online_ideal_screw_vel[3*i+j],online_last_ideal_screw_vel[3*i+j]);
-
-                if(online_ideal_screw_vel[3*i+j]>VelMax)
-            		online_ideal_screw_vel[3*i+j]=VelMax;
-            	else if(online_ideal_screw_vel[3*i+j]<-VelMax)
-            		online_ideal_screw_vel[3*i+j]=-VelMax;
-               // rt_printf("3.screw_vel_input:%f\n",online_ideal_screw_vel[3*i+j]);
-
-            	online_ideal_screw_pos[3*i+j]=online_last_ideal_screw_pos[3*i+j]+online_ideal_screw_vel[3*i+j]/1000;
-              // rt_printf("screw_input final:%f\n",online_ideal_screw_pos[3*i+j]);
-            }
-            CGait::robot.pLegs[i]->SetPin(online_ideal_screw_pos+3*i);
-            CGait::robot.pLegs[i]->GetPee(online_ideal_foot_pos+3*i);
-
-            memcpy(online_stance_leg_pos+3*i,online_ideal_foot_pos+3*i,sizeof(double)*3);
-        	//rt_printf("foot_pos after PID, %f %f %f\n",online_ideal_foot_pos[3*i],online_ideal_foot_pos[3*i+1],online_ideal_foot_pos[3*i+2]);
-
-        	break;
-        case Invalid:
-            //rt_printf("leg ID: %d\n",i);
-
-        	memcpy(online_ideal_screw_pos+3*i,online_static_screw_pos+3*i,sizeof(double)*3);
-
-            CGait::robot.pLegs[i]->SetPin(online_ideal_screw_pos+3*i);
-            CGait::robot.pLegs[i]->GetPee(online_ideal_foot_pos+3*i);
-        	//rt_printf("foot_pos before PID, %f %f %f\n",online_ideal_foot_pos[3*i],online_ideal_foot_pos[3*i+1],online_ideal_foot_pos[3*i+2]);
-
-            //just to keep accordance with other cases
-            memcpy(online_ideal_screw_pos_before_PID+3*i,online_ideal_screw_pos+3*i,sizeof(double)*3);
-            memcpy(online_ideal_foot_pos_before_PID+3*i,online_ideal_foot_pos+3*i,sizeof(double)*3);
-        	//rt_printf("foot_pos after PID, %f %f %f\n",online_ideal_foot_pos[3*i],online_ideal_foot_pos[3*i+1],online_ideal_foot_pos[3*i+2]);
-
-        	break;
-
-        default:
-        	break;
-        }
-
-
-    	//decelerate at AccMax when getting screwpos limit
-    	if (online_ideal_screw_pos[3*i] == 1.091 - SafetyDistance)
-    	{
-    		online_ideal_screw_pos[3*i]=online_last_ideal_screw_pos[3*i]+online_last_ideal_screw_vel[3*i]*0.001-AccMax/2*0.001*0.001;
-    		online_ideal_screw_vel[3*i]=online_last_ideal_screw_vel[3*i]-AccMax*0.001;
-
-    	}
-    	else if(online_ideal_screw_pos[3*i] == 0.68 + SafetyDistance)
-    	{
-    		online_ideal_screw_pos[3*i]=online_last_ideal_screw_pos[3*i]+online_last_ideal_screw_vel[3*i]*0.001+AccMax/2*0.001*0.001;
-    		online_ideal_screw_vel[3*i]=online_last_ideal_screw_vel[3*i]+AccMax*0.001;
-
-    	}
-
-    	if (online_ideal_screw_pos[3*i+1] == 1.112 - SafetyDistance)
-		{
-			online_ideal_screw_pos[3*i+1]=online_last_ideal_screw_pos[3*i+1]+online_last_ideal_screw_vel[3*i+1]*0.001-AccMax/2*0.001*0.001;
-    		online_ideal_screw_vel[3*i+1]=online_last_ideal_screw_vel[3*i+1]-AccMax*0.001;
-
-		}
-    	else if(online_ideal_screw_pos[3*i+1] == 0.702 + SafetyDistance)
-    	{
-    		online_ideal_screw_pos[3*i+1]=online_last_ideal_screw_pos[3*i+1]+online_last_ideal_screw_vel[3*i+1]*0.001+AccMax/2*0.001*0.001;
-    		online_ideal_screw_vel[3*i+1]=online_last_ideal_screw_vel[3*i+1]+AccMax*0.001;
-
-    	}
-
-    	if (online_ideal_screw_pos[3*i+2] == 1.112 - SafetyDistance)
-		{
-			online_ideal_screw_pos[3*i+2]=online_last_ideal_screw_pos[3*i+2]+online_last_ideal_screw_vel[3*i+2]*0.001-AccMax/2*0.001*0.001;
-    		online_ideal_screw_vel[3*i+2]=online_last_ideal_screw_vel[3*i+2]-AccMax*0.001;
-
-		}
-    	else if(online_ideal_screw_pos[3*i+2] == 0.702 - SafetyDistance)
-		{
-
-    		online_ideal_screw_pos[3*i+2]=online_last_ideal_screw_pos[3*i+2]+online_last_ideal_screw_vel[3*i+2]*0.001+AccMax/2*0.001*0.001;
-    		online_ideal_screw_vel[3*i+2]=online_last_ideal_screw_vel[3*i+2]+AccMax*0.001;
-
-		}
-
-    }
-
- 	memcpy(online_second_last_ideal_screw_pos,online_last_ideal_screw_pos,sizeof(double)*18);
- 	memcpy(online_last_ideal_screw_pos,online_ideal_screw_pos,sizeof(double)*18);
-
-
- 	memcpy(online_last_ideal_screw_vel,online_ideal_screw_vel,sizeof(double)*18);
-
-  /*  rt_printf("online ideal last screw pos\n");
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[0],online_last_ideal_screw_pos[1],online_last_ideal_screw_pos[2]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[3],online_last_ideal_screw_pos[4],online_last_ideal_screw_pos[5]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[6],online_last_ideal_screw_pos[7],online_last_ideal_screw_pos[8]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[9],online_last_ideal_screw_pos[10],online_last_ideal_screw_pos[11]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[12],online_last_ideal_screw_pos[13],online_last_ideal_screw_pos[14]);
-        rt_printf("%f,%f,%f\n",online_last_ideal_screw_pos[15],online_last_ideal_screw_pos[16],online_last_ideal_screw_pos[17]);
-*/
- 	  //  double screw_pos_ideal[18];
- 	 //   for (int k=0;k<18;k++)
- 	  //  {
- 	 //   	screw_pos_ideal[k]=online_ideal_screw_pos[k]/350/65536;
- 	 //   }
-     //   CGait::robot.SetPin(screw_pos_ideal,ep_ROBOT_313);
-
-    //    CGait::robot.GetPee(online_actual_foot_pos);
-
-      //  CGait::robot.SetPee(online_actual_foot_pos,ep_ROBOT_313);
-
-      //  CGait::robot.GetPin(online_screw_pos);
-    // rt_printf(" \n");
-
-}
-
 
 bool CGait::IsGaitFinished()
 {
@@ -828,60 +427,28 @@ int CGait::RunGait(EGAIT* p_gait,Aris::RT_CONTROL::CMachineData& p_data)
     MapFeedbackDataIn(p_data);
 
 
-    if(p_gait[0]==GAIT_ONLINE)
-    {
-    	if(p_gait[0]!=m_currentGait[0])
-    	{
-        	//rt_printf("1. PID index %d\n",1);
 
-    		online_DoPID(0,p_data);
-
-    	}
-    	else if(m_gaitCurrentIndex[0]+1<Gait_online_Acc_Length)
-		{
-        	//rt_printf("1. PID index %d\n",1+m_gaitCurrentIndex[0]);
-
-	    	online_DoPID(1+m_gaitCurrentIndex[0],p_data);
-		}
-		else
-		{
-			if(Gait_iter[0]>=1&&IsConsFinished[0]==false)
-			{
-	        	//rt_printf("2. PID index %d\n",(m_gaitCurrentIndex[0]+1-Gait_online_Acc_Length)%Gait_online_Cons_Length+Gait_online_Acc_Length);
-
-				online_DoPID((m_gaitCurrentIndex[0]+1-Gait_online_Acc_Length)%Gait_online_Cons_Length+Gait_online_Acc_Length,p_data);
-
-			}
-			else
-			{
-	        	//rt_printf("3. PID index %d\n",m_gaitCurrentIndex[0]+1-Gait_online_Cons_Length*(Gait_iter_count[0]-1));
-
-		    	online_DoPID(m_gaitCurrentIndex[0]+1-Gait_online_Cons_Length*(Gait_iter_count[0]-1),p_data);
-
-			}
-		}
-
-    	//rt_printf("is cons finished %d, current index %d\n",IsConsFinished[0],m_gaitCurrentIndex[0]);
-    }
     if(p_gait[0]==GAIT_TOSTANDSTILL)
     {
-    	double screw_pos[18];
 
     	if(p_gait[0]!=m_currentGait[0])
     	{
-			 online_ToStandstill(0,online_ideal_screw_pos,screw_pos);
+
+
+    		for(int i=0;i<AXIS_NUMBER;i++)
+    		{
+    			memcpy(&(screw_init_pos[i]),&(m_feedbackDataMapped[i].Position),sizeof(int));
+     		}
+
+			 online_ToStandstill(0,screw_init_pos,screw_command_pos);
     	}
     	else
     	{
-			 online_ToStandstill(m_gaitCurrentIndex[0]+1,online_ideal_screw_pos,screw_pos);
+			 online_ToStandstill(m_gaitCurrentIndex[0]+1,screw_init_pos,screw_command_pos);
+
     	}
     }
 
-    //IF ONLINE-->PID-->screw[18]
-  /*  if(p_gait[0]==GAIT_ONLINE)
-    {
-    	online_DoPID(1+m_gaitCurrentIndex[0],p_data);
-    }*/
 
 	for(int i=0;i<AXIS_NUMBER;i++)
 	{
@@ -896,7 +463,6 @@ int CGait::RunGait(EGAIT* p_gait,Aris::RT_CONTROL::CMachineData& p_data)
 			{
 			case GAIT_TOSTANDSTILL:
 
-				double screw_pos[18];
 
 				if(p_gait[i]!=m_currentGait[i])
 				{
@@ -907,14 +473,14 @@ int CGait::RunGait(EGAIT* p_gait,Aris::RT_CONTROL::CMachineData& p_data)
 					m_gaitCurrentIndex[i]=0;
 
  					//rt_printf("online ideal screw pos before:%f\n",online_ideal_screw_pos[motorID]);
- 				    m_commandDataMapped[motorID].Position=int(350*65536*screw_pos[motorID]);
+ 				    m_commandDataMapped[motorID].Position= screw_command_pos[motorID];
 				}
 				else
 				{
 					m_gaitCurrentIndex[i]=(int)(p_data.time-m_gaitStartTime[i]);
 
 
-				    m_commandDataMapped[motorID].Position=int(350*65536*screw_pos[motorID]);
+				    m_commandDataMapped[motorID].Position= screw_command_pos[motorID];
 
 
 					if(m_gaitCurrentIndex[i]==6000-1)
@@ -933,133 +499,7 @@ int CGait::RunGait(EGAIT* p_gait,Aris::RT_CONTROL::CMachineData& p_data)
 				}
 				break;
 
-			 case GAIT_ONLINE:
 
- 				  				 	if(p_gait[i]!=m_currentGait[i])
-				  					{
-				  						rt_printf("driver %d: GAIT_MOVE begin\n",i);
-				  						m_gaitState[i]=EGaitState::GAIT_RUN;
-				  						m_currentGait[i]=p_gait[i];
-				  						m_gaitStartTime[i]=p_data.time;
-				  						//rt_printf("time is: %d \n", p_data.time);
-				  						m_commandDataMapped[motorID].Position=int(350*65536*online_ideal_screw_pos[motorID]);
-				  						//m_gaitCurrentIndexForPID[i]=1;
-				  						m_gaitCurrentIndex[i]=0;
-				  						rt_printf("driver %d:Begin Online Trotting...\n",i);
-				  					}
-				  					else
-				  					{
-				  						m_gaitCurrentIndex[i]=(int)(p_data.time-m_gaitStartTime[i]);
-				  						//m_gaitCurrentIndexForPID[i] = m_gaitCurrentIndex[i]+1;
-  				  						//rt_printf("index%d and Gait_iter_count%d and Gait_iter%d\n",m_gaitCurrentIndex,Gait_iter_count,Gait_iter);
-
-				  						//rt_printf("MOVE order:%d\n",GaitMove_Acc[m_gaitCurrentIndex][0]);
-				  						if(m_gaitCurrentIndex[i]<Gait_online_Acc_Length)
-				  						{
-				  							m_commandDataMapped[motorID].Position=int(350*65536*online_ideal_screw_pos[motorID]);
-				  						}
-
-				  						else //if(m_gaitCurrentIndex>=GAIT_ACC_LEN)
-				  						{
-				  							if(Gait_iter[i]>=1&&IsConsFinished[i]==false)
-				  							{
-
-
-				  								m_commandDataMapped[motorID].Position=int(350*65536*online_ideal_screw_pos[motorID]);
-
-				  								if(((m_gaitCurrentIndex[i]-Gait_online_Acc_Length)%Gait_online_Cons_Length)==0)
-				  								{
-				  									Gait_iter_count[i]++;
-				  								}
-
-				  								if(((m_gaitCurrentIndex[i]-Gait_online_Acc_Length)%Gait_online_Cons_Length)==Gait_online_Cons_Length-1)
-				  								{
-				  									Gait_iter[i]--;
-				  								}
-				  							}
-				  							else
-				  							{
-				  								IsConsFinished[i]=true;
-				  							//	rt_printf("GAIT_MOVE just finished CONS stage...\n");
-				  							//  rt_printf("GAIT_MOVE will be deccelarating...\n");
-
-				  							    	m_commandDataMapped[motorID].Position=int(350*65536*online_ideal_screw_pos[motorID]);
-				  							}
-
-
-				  							if(m_gaitCurrentIndex[i]==Gait_online_Acc_Length+Gait_online_Cons_Length*Gait_iter_count[i]+Gait_online_Dec_Length-1)
-				  							{
-				  								rt_printf("driver %d: GAIT_MOVE will transfer to GAIT_STANDSTILL...\n",i);
-
-				  								p_gait[i]=GAIT_STANDSTILL;
-
-
-				  									m_standStillData[motorID].Position=m_feedbackDataMapped[motorID].Position;
-				  									m_standStillData[motorID].Velocity=m_feedbackDataMapped[motorID].Velocity;
-				  									m_standStillData[motorID].Torque=m_feedbackDataMapped[motorID].Torque;
-
-				  									 //only in this cycle, out side get true from IsGaitFinished()
-				  									 m_gaitState[i]=EGaitState::GAIT_STOP;
-				  									 Gait_iter_count[i]=0;
-				  									 Gait_iter[i]=1;
-				  									 IsConsFinished[i]=false;
-				  							}
-				  						}
-				  					}
-
-
- 								    if(i==0)
- 								    {
- 									    rt_printf("online ideal screw pos:%f\n",online_ideal_screw_pos[motorID]);
- 									   // rt_printf("screw pos:%f\n",screw_pos[motorID]);
-
- 								    }
-
-				  					break;
-
-			/* 	if(i==0)
-				{
-					if(p_gait[i]!=m_currentGait[i])
-					{
-						online_DoPID(0,p_data);
-					}
-				}
-
-				if(p_gait[i]!=m_currentGait[i])
-				{
-				//	rt_printf("driver %d: GAIT_ONLINE begin\n",i);
-					m_gaitState[i]=EGaitState::GAIT_RUN;
-					m_currentGait[i]=p_gait[i];
-					m_gaitStartTime[i]=p_data.time;
-
-					m_gaitCurrentIndex[i]=0;
-				    m_commandDataMapped[motorID].Position=(int)(350*65536*online_ideal_screw_pos[motorID]);
-
-
-				}
-				else
-				{
-
-					m_gaitCurrentIndex[i]=(int)(p_data.time-m_gaitStartTime[i]);
-					if(i==0)
-						rt_printf("m_currentIndex %d\n",m_gaitCurrentIndex[i]);
-
-				    m_commandDataMapped[motorID].Position=(int)(350*65536*online_ideal_screw_pos[motorID]);
-
-
-					if(m_gaitCurrentIndex[i]==Trot.m_gaitLength-1)
-					{
-						rt_printf("driver %d:GAIT_ONLINE will transfer to GAIT_STANDSTILL...\n",i);
-						p_gait[i]=GAIT_STANDSTILL;
-
-						m_standStillData[motorID].Position=m_feedbackDataMapped[motorID].Position;
-						m_standStillData[motorID].Velocity=m_feedbackDataMapped[motorID].Velocity;
-						m_standStillData[motorID].Torque=m_feedbackDataMapped[motorID].Torque;
-						m_gaitState[i]=EGaitState::GAIT_STOP;
-					}
-				}
-
-				break;*/
 
 
 			case GAIT_NULL:
@@ -1579,7 +1019,7 @@ int CGait::RunGait(EGAIT* p_gait,Aris::RT_CONTROL::CMachineData& p_data)
 	return 0;
 };
 
-void CGait::online_trot_TargetXZ(double *IMU_angleVel,double H_robot,int LegID,double *XandZ)
+/*void CGait::online_trot_TargetXZ(double *IMU_angleVel,double H_robot,int LegID,double *XandZ)
 {
 	double VelX=-IMU_angleVel[1]*H_robot;
 	double VelZ=-IMU_angleVel[0]*H_robot;
@@ -1612,50 +1052,21 @@ void CGait::online_trot_TargetXZ(double *IMU_angleVel,double H_robot,int LegID,d
 		XandZ[0]=-XandZ[0];
 		XandZ[1]=-XandZ[1];
 	}
-}
+}*/
 
-/*
-void CGait::online_ToStandstill(int N,double* initial_screw_pos,double* screw_input)
+
+
+void CGait::online_ToStandstill(int N,int* initial_screw,int* screw)
 {
-	int Nperiod=3000;
+	static double initial_screw_pos[AXIS_NUMBER];
+	static double screw_input[AXIS_NUMBER];
 
-	double target_screw_pos[18]=
+
+	for(int i=0;i<AXIS_NUMBER;i++)
 	{
-      19017915/350/65536,18909560/350/65536,19818639/350/65536,
-	  18592790/350/65536,19069060/350/65536,19069060/350/65536,
-	  19031958/350/65536,19832453/350/65536,18912891/350/65536,
-	  19017915/350/65536,19818639/350/65536,18909560/350/65536,
-	  18592790/350/65536,19069060/350/65536,19069060/350/65536,
-	  19031958/350/65536,18912891/350/65536,19832453/350/65536
-	};
-
-	//function: (target-initial)/2*cos(i/N*2*PI-PI)++(tartget+initial)/2;
-
-	for(int i=0;i<18;i++)
-	{
-		if(MapPhyToAbs[i]%3==1)
-			if(i<Nperiod/2)//???not i, should be j???
-			{
-				screw_input[i]=(-0.8-initial_screw_pos[i])/2*cos(i/N*4*PI-PI)+(-0.8+initial_screw_pos[i])/2;
-
-			}
-			else
-			{
-				screw_input[i]=(target_pos[MapPhyToAbs[i]]+0.8)/2*cos((i-N/2)/N*4*PI-PI)+(target_pos[MapPhyToAbs[i]]-0.8)/2;
-
-			}
-
-		else
-			screw_input[i]=(target_pos[MapPhyToAbs[i]]-initial_screw_pos[i])/2*cos(i/N*2*PI-PI)+(target_pos[MapPhyToAbs[i]]+initial_screw_pos[i])/2;
-			//screw_input[i]=-(target_pos[MapPhyToAbs[i]]-initial_screw_pos[i])/2*cos(i/Nperiod*PI)+(target_pos[MapPhyToAbs[i]]+initial_screw_pos[i])/2;
-
+		initial_screw_pos[i]=  (double)(initial_screw[i])/ 65536/350 ;
 	}
 
-}
-*/
-
-void CGait::online_ToStandstill(int N,double* initial_screw_pos,double* screw_input)
-{
 	double Nperiod=6000;
 
  	double target_body_pos[6]={0,0,0,0,0,0};
@@ -1739,9 +1150,11 @@ void CGait::online_ToStandstill(int N,double* initial_screw_pos,double* screw_in
 		}
 	}
 
-	if(N==int(Nperiod-1))
+
+	for(int i=0;i<AXIS_NUMBER;i++)
 	{
- 		memcpy(online_ideal_screw_pos,screw_input,sizeof(double)*18);
+		screw[i]=(int)(screw_input[i]*65536*350);
+
 	}
 
 

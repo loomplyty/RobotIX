@@ -355,161 +355,18 @@ int tg(Aris::RT_CONTROL::CMachineData& machineData,Aris::Core::RT_MSG& msgRecv,A
 
 	    	for(int i=0;i<18;i++)
 	    	{
-	    		msgSend.CopyAt(&machineData.motorsStates[i],sizeof(int),i*5);
-	    		msgSend.CopyAt(&machineData.motorsModesDisplay[i],sizeof(int),i*5+1);
-		    	msgSend.CopyAt(&machineData.feedbackData[0].Position,sizeof(int),i*5+2);
-		    	msgSend.CopyAt(&machineData.feedbackData[0].Position,sizeof(int),i*5+3);
-		    	msgSend.CopyAt(&machineData.feedbackData[0].Position,sizeof(int),i*5+4);
+	    		msgSend.CopyAt(&machineData.motorsStates[MapAbsToPhy[i]],sizeof(int),i*5);
+	    		msgSend.CopyAt(&machineData.motorsModesDisplay[MapAbsToPhy[i]],sizeof(int),i*5+1);
+		    	msgSend.CopyAt(&machineData.feedbackData[MapAbsToPhy[i]].Position,sizeof(int),i*5+2);
+		    	msgSend.CopyAt(&machineData.feedbackData[MapAbsToPhy[i]].Velocity,sizeof(int),i*5+3);
+		    	msgSend.CopyAt(&machineData.feedbackData[MapAbsToPhy[i]].Torque,sizeof(int),i*5+4);
 	    	}
-
-
-		 //     rt_printf("ty give msg id %d data length %d \n",msgSend.GetMsgID(),msgSend.GetLength());
- 		//  rt_machine_msg.SetMsgID(1000);
-		//  rt_machine_msg.Copy(&machineData,sizeof(machineData));
 
 	         cs.RT_PostMsg(msgSend);
 	}
 
 
-  	if(tg_count==2000)
-	{
- 	 /*  ofstream input_static;
-	    input_static.open("./static.txt");
 
-	 	CTrotGait trot;
-	 	double foot_pos[18];
-	 	double screw_pos[18];
-	 	double body[6]={0, 0, 0, 0, 0, 0};
-
-	 	trot.LoadRobot();
-	 	double a,b,c,d,e;
-	 	a=1;
-	 	b=3;
-	 	c=0.1;
-	 	d=0.1;
-	 	e=0.5;
-	 	trot.SetGaitParas(a,b,c,d,e);
-	 	int N=1000*(trot.m_raiseMidLegsTime*2+trot.m_period*2);
-	 	cout<<"gait length"<<N<<endl;
-	 	for(int i=1;i<=N;i++)
-	 	{
-	 		trot.CalPee(i,foot_pos,body);
-	 		trot.CalPin(screw_pos);
-
-
-	 		input_static<<foot_pos[0]<<"\t";
-	 		input_static<<foot_pos[1]<<"\t";
-	 		input_static<<foot_pos[2]<<"\t";
-
-	 		input_static<<foot_pos[12]<<"\t";
-	 		input_static<<foot_pos[13]<<"\t";
-	 		input_static<<foot_pos[14]<<"\t";
-
-	 		input_static<<body[3]<<"\t";
-	 		input_static<<body[4]<<"\t";
-	 		input_static<<body[5]<<"\t";
-
-
-
-	 		input_static<<endl;
-
-	 	}
-	 	input_static.close();*/
-
-
-
-
- 	  /*   ofstream input;
- 	    input.open("./input.txt");
-
-		 for(int i=0;i<8000;i++)
-		{
-			input<<i<<"\t";
- 			gait.online_DoPID(i,machineData);
- 			input<<gait.online_ideal_foot_pos_before_PID[0]<<"\t";
-			input<<gait.online_ideal_foot_pos_before_PID[1]<<"\t";
-			input<<gait.online_ideal_foot_pos_before_PID[2]<<"\t";
-			input<<gait.online_ideal_foot_pos[0]<<"\t";
-			input<<gait.online_ideal_foot_pos[1]<<"\t";
-			input<<gait.online_ideal_foot_pos[2]<<"\t";
-
-		 	input<<gait.online_ideal_screw_pos_before_PID[0]<<"\t";
-		 	input<<gait.online_ideal_screw_pos_before_PID[1]<<"\t";
-		 	input<<gait.online_ideal_screw_pos_before_PID[2]<<"\t";
-		 	input<<gait.online_ideal_screw_pos[0]<<"\t";
-		 	input<<gait.online_ideal_screw_pos[1]<<"\t";
-		 	input<<gait.online_ideal_screw_pos[2]<<"\t";
-
-		 //	input<<gait.online_ideal_screw_pos[15]<<"\t";
-		 //	input<<gait.online_ideal_screw_pos[16]<<"\t";
-		 //	input<<gait.online_ideal_screw_pos[17]<<"\t";
-		//	input<<gait.online_ideal_foot_pos_before_PID[6]<<"\t";
-		//	input<<gait.online_ideal_foot_pos_before_PID[7]<<"\t";
-		//	input<<gait.online_ideal_foot_pos_before_PID[8]<<"\t";
-		//	input<<gait.online_ideal_foot_pos[6]<<"\t";
-		//	input<<gait.online_ideal_foot_pos[7]<<"\t";
-		//	input<<gait.online_ideal_foot_pos[8]<<"\t";
-
-		// 	input<<gait.online_ideal_screw_pos_before_PID[6]<<"\t";
-		 //	input<<gait.online_ideal_screw_pos_before_PID[7]<<"\t";
-		 //	input<<gait.online_ideal_screw_pos_before_PID[8]<<"\t";
-		 //	input<<gait.online_ideal_screw_pos[6]<<"\t";
-		 //	input<<gait.online_ideal_screw_pos[7]<<"\t";
-		// 	input<<gait.online_ideal_screw_pos[8]<<"\t";
-
-		 	//input<<gait.online_angle[0]<<"\t";
-		 //	input<<gait.online_angle[1]<<"\t";
-		 //	input<<gait.online_angle[2]<<"\t";
-		 	//input<<gait.online_angleVel[0]<<"\t";
-		 //	input<<gait.online_angleVel[1]<<"\t";
-		 	//input<<gait.online_angleVel[2]<<"\t";
-		 //	input<<gait.online_IMU_313[0]<<"\t";
-		//	input<<gait.online_IMU_313[1]<<"\t";
-		 //	input<<gait.online_IMU_313[2]<<"\t";
-
-
-
-		 //	input<<gait.online_ideal_screw_vel[0]<<"\t";
-		 //	input<<gait.online_ideal_screw_vel[1]<<"\t";
-		 //	input<<gait.online_ideal_screw_vel[2]<<"\t";
-
-		 //	input<<gait.online_last_ideal_screw_vel[0]<<"\t";
-		 //	input<<gait.online_last_ideal_screw_vel[1]<<"\t";
-		 //	input<<gait.online_last_ideal_screw_vel[2]<<"\t";
-
-
-			input<<endl;
-		}
-
-
-
-	//	input.close();*/
-
-	}
-
-	//rt_printf("angle 313 %f %f %f\n",gait.online_angle[0],gait.online_angle[1],gait.online_angle[2]);
-	// for(int i = 0; i < 3; i++)
-	// rt_printf("Linear Acc[%d] = %.3lf   ", machineData.IMUData.LinearAccleration[i]);
-	// rt_printf("\n");
-
-	const int MapAbsToPhy[18]=
-	{
-			10,	11,	9,
-			12,	14,	13,
-			17,	15,	16,
-			6,	8,	7,
-			3,	5,	4,
-			0,	2,	1
-	};
-	const int MapPhyToAbs[18]=
-	{
-			15,	17,	16,
-			12,	14,	13,
-			9,	11,	10,
-			2,	0,	1,
-			3,	5,	4,
-			7,	8,	6
-	};
 
  	int CommandID;
 
@@ -832,11 +689,9 @@ int tg(Aris::RT_CONTROL::CMachineData& machineData,Aris::Core::RT_MSG& msgRecv,A
 		break;
 
 	case 1035:
-		//rt_printf("IMU\n\n\n\n");
-		msgSend.PasteAt(gait.online_angle,sizeof(double)*3,0);
+ 		msgSend.PasteAt(gait.online_angle,sizeof(double)*3,0);
 	    msgSend.PasteAt(gait.online_angleVel,sizeof(double)*3,sizeof(double)*3);
 		msgSend.PasteAt(gait.online_linearAcc,sizeof(double)*3,sizeof(double)*6);
-	   // rt_printf("IMU raw data %f %f %f\n",gait.online_angle[0],gait.online_angle[1],gait.online_angle[2]);
 
 		break;
 
@@ -883,22 +738,15 @@ int OnGetControlCommand(Aris::Core::MSG &msg)
 
     switch(CommandID)
     {
-    case 1:
-		data.SetMsgID(POWEROFF);
-		int k;
-		k=123;
-		data.Copy(&k,sizeof(int));
-		cs.NRT_PostMsg(data);
-		break;
-    case 2:
+    case 3:
     	data.SetMsgID(STOP);
 		cs.NRT_PostMsg(data);
     	break;
-    case 3:
+    case 1:
     	data.SetMsgID(ENABLE);
 		cs.NRT_PostMsg(data);
     	break;
-    case 4:
+    case 2:
     	data.SetMsgID(RUNNING);
 		cs.NRT_PostMsg(data);
     	break;
@@ -918,44 +766,39 @@ int OnGetControlCommand(Aris::Core::MSG &msg)
     	data.SetMsgID(HOME2START_2);
 		cs.NRT_PostMsg(data);
     	break;
+
     case 9:
-    	data.SetMsgID(FORWARD);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 10:
-    	data.SetMsgID(BACKWARD);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 11:
-    	data.SetMsgID(FAST_FORWARD);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 12:
-    	data.SetMsgID(FAST_BACKWARD);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 13:
-    	data.SetMsgID(LEGUP);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 14:
-    	data.SetMsgID(TURNLEFT);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 15:
-    	data.SetMsgID(TURNRIGHT);
-		cs.NRT_PostMsg(data);
-    	break;
-    case 16:
-    	data.SetMsgID(ONLINEGAIT);
-    	cs.NRT_PostMsg(data);
-    	break;
-    case 17:
     	data.SetMsgID(TOSTANDSTILL);
     	cs.NRT_PostMsg(data);
     	break;
-
-
+    case 10:
+    	data.SetMsgID(FORWARD);
+		cs.NRT_PostMsg(data);
+    	break;
+    case 11:
+    	data.SetMsgID(BACKWARD);
+		cs.NRT_PostMsg(data);
+    	break;
+    case 12:
+    	data.SetMsgID(FAST_FORWARD);
+		cs.NRT_PostMsg(data);
+    	break;
+    case 13:
+    	data.SetMsgID(FAST_BACKWARD);
+		cs.NRT_PostMsg(data);
+    	break;
+    case 16:
+    	data.SetMsgID(LEGUP);
+		cs.NRT_PostMsg(data);
+    	break;
+    case 15:
+    	data.SetMsgID(TURNLEFT);
+		cs.NRT_PostMsg(data);
+    	break;
+    case 14:
+    	data.SetMsgID(TURNRIGHT);
+		cs.NRT_PostMsg(data);
+    	break;
     default:
 		printf("Hi! I didn't get validate cmd\n");
         break;
@@ -964,14 +807,7 @@ int OnGetControlCommand(Aris::Core::MSG &msg)
     return CommandID;
 };
 
-int On_RT_DataReceived(Aris::Core::MSG &data)
-{
-	if(Is_CS_Connected==true)
-	{
-	    printf("Sending data to client,data length: %d\n",data.GetLength());
-		ControlSystem.SendData(data);
-	}
-}
+
 //static int driverIDs[18]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17};
 
 int main(int argc, char** argv)
@@ -1019,7 +855,7 @@ int main(int argc, char** argv)
 			initParam.homeLowSpeed=80000;
 			initParam.homeAccel=8000;
 			initParam.homeMode=-1;
-			initParam.homeTorqueLimit=1000;
+			initParam.homeTorqueLimit=0;
 
 			////necessary steps
 			initParam.homeOffsets=HEXBOT_HOME_OFFSETS_RESOLVER;

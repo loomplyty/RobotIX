@@ -6,14 +6,6 @@
 
 #IncludeRegexTransform: 
 
-/home/hex/Desktop/Control_demo/Client.cpp
-Client.h
-/home/hex/Desktop/Control_demo/Client.h
-iostream
--
-cstring
--
-
 /home/hex/Desktop/Control_demo/Client.h
 Aris_Message.h
 /home/hex/Desktop/Control_demo/Aris_Message.h

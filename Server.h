@@ -20,13 +20,14 @@ enum Client_Msg
 	VS_Connected=3,
 	VS_MAP_Received=4,
 	VS_Lost=5,
-	RT_Data_Received=10000,
 };
 
 //register is in ac_test
 enum RobotCMD_Msg
 {
 	GetControlCommand=100,
+	RT_Data_Received=10000,
+
 };
 
 /*enum COMMAND
@@ -49,6 +50,7 @@ enum RobotCMD_Msg
 int On_CS_Connected(Aris::Core::MSG &msg);
 int On_CS_CMD_Received(Aris::Core::MSG &msg);
 int On_CS_Lost(Aris::Core::MSG &msg);
+int On_RT_DataReceived(Aris::Core::MSG &data);
 
 // CONN callback
 int On_CS_ConnectionReceived(Aris::Core::CONN *pConn, const char* addr,int port);

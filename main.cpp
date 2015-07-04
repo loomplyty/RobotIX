@@ -29,7 +29,6 @@ int main()
 
 	Aris::Core::RegisterMsgCallback(ControlCommandNeeded,OnControlCommandNeeded);
 	Aris::Core::RegisterMsgCallback(SystemLost, OnSystemLost);
-	Aris::Core::RegisterMsgCallback(RTDataGet, OnRTDataGet);
 
 
 

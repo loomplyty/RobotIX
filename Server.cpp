@@ -30,18 +30,16 @@ int On_CS_DataReceived(Aris::Core::CONN *pConn, Aris::Core::MSG &data)
 {
 	    int cmd=data.GetMsgID();
 		//RobotCMD_Msg CMD;
-        MSG CMD=CS_CMD_Received;
-       // int ID=CMD.GetMsgID();
-      //cout<<"MSG ID is :"<<ID<<endl;
+        MSG CMD;
+        CMD.SetMsgID(CS_CMD_Received);
+
         CMD.SetLength(sizeof(int));
-		//add control matrix
-        bool IsCMDExecutable=true;
+         bool IsCMDExecutable=true;
 
         CMD.Copy(&cmd,sizeof(int));
 		cout<<"received CMD is"<<cmd<<endl;
 		PostMsg(CMD);
-	//	LastCMD=data.GetMsgID();
-		return 0;
+ 		return 0;
 }
 int On_CS_ConnectionLost(Aris::Core::CONN *pConn)
 {
@@ -71,8 +69,6 @@ int On_CS_CMD_Received(Aris::Core::MSG &msg)
 	Command.SetMsgID(GetControlCommand);
 	PostMsg(Command);
 	int cmd;
-//	Command.Paste(&cmd,sizeof(int));
-//	cout<<"received CMD in cmd received is"<<cmd<<endl;
 
 	MSG data(0,0);
 	ControlSystem.SendData(data);
@@ -84,6 +80,15 @@ int On_CS_Lost(Aris::Core::MSG &msg)
 		cout << "Control system connection lost" << endl;
 		ControlSystem.StartServer("5690");
 		return 0;
+}
+
+int On_RT_DataReceived(Aris::Core::MSG &data)
+{
+	if(Is_CS_Connected==true)
+	{
+	    printf("Sending data to client,data length: %d\n",data.GetLength());
+		ControlSystem.SendData(data);
+	}
 }
 
 
