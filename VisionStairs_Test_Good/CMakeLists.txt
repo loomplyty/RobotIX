@@ -233,7 +233,7 @@ set(VISION_SOURCE_FILES Aris_Vision.cpp Vision_Control0.cpp Vision_Terrain0.cpp 
 PREPEND(VISION_FULL_SRC Aris_Vision ${VISION_SOURCE_FILES})
 
 set(MOTION_SOURCE_FILES Motions.cpp )
-PREPEND(MOTION_FULL_SRC  ${MOTION_SOURCE_FILES})
+PREPEND(MOTION_FULL_SRC  Server ${MOTION_SOURCE_FILES})
 
 add_executable(Server ${FULL_SRC} ${VISION_FULL_SRC} ${MOTION_FULL_SRC})
 target_link_libraries(Server ${ALL_LINK_LIB})

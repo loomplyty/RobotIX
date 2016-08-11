@@ -40,6 +40,8 @@ enum GaitType
 
 
 
+
+
 class GaitGenerator
 {
 public:
@@ -51,8 +53,10 @@ public:
     void SetWalkParams(const WalkGaitParams param);
     void UpdateRobotConfig(const double* legPee2b);
 
-    void GaitDetermineNextConfig();
- //    GaitGenerateTraj();
+    void GaitDetermineNextConfigByVision();
+    void GaitDetermineNextConfigByHuman(const double terrainPitch,const double terrainRoll);
+
+    void GenerateTraj(const int count,const int totalCount,RobotConfig config_2_b0);
 
     // elevationMap w.r.t. the current body config
     double m_TerrainMap[400][400];
