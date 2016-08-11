@@ -1,0 +1,20 @@
+Thu Aug 11 10:09:11 2016
+
+0:server open successful
+4:received connection, the server_socket_ip_ is: 127.0.0.1
+4:received command string:start
+4:master request failed!
+4:lost connection
+4:restart server socket successful
+6:received connection, the server_socket_ip_ is: 127.0.0.1
+6:received command string:wks
+6:lost connection
+6:restart server socket successful
+182:received connection, the server_socket_ip_ is: 127.0.0.1
+182:received command string:end
+182:invalid command name, server does not have command "end"
+182:invalid command name, server does not have command "end"
+182:lost connection
+182:restart server socket successful
+185:received connection, the server_socket_ip_ is: 127.0.0.1
+185:received command string:exit

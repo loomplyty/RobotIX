@@ -1,0 +1,14 @@
+Thu Aug 11 09:11:54 2016
+
+0:server open successful
+9:received connection, the server_socket_ip_ is: 127.0.0.1
+9:received command string:start
+9:master request failed!
+9:lost connection
+9:restart server socket successful
+12:received connection, the server_socket_ip_ is: 127.0.0.1
+12:received command string:wks
+12:lost connection
+12:restart server socket successful
+25:received connection, the server_socket_ip_ is: 127.0.0.1
+25:received command string:exit
