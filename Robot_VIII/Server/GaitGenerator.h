@@ -56,7 +56,7 @@ public:
     void GaitDetermineNextConfigByVision();
     void GaitDetermineNextConfigByHuman(const double terrainPitch,const double terrainRoll);
 
-    void GenerateTraj(const int count,const int totalCount,RobotConfig config_2_b0);
+    void GenerateTraj(const int count,const int totalCount,RobotConfig& config_2_b0);
 
     // elevationMap w.r.t. the current body config
     double m_TerrainMap[400][400];
@@ -69,7 +69,7 @@ public:
     RobotConfig m_NextConfig_b1;
     RobotConfig m_NextConfig_b0;
     int m_GaitType;
-     int swingID[3]={0,2,4};
+    int swingID[3]={0,2,4};
     int stanceID[3]={1,5,3};
 
 // useful functions
@@ -90,7 +90,12 @@ public:
     int sign(double d);
     void TriangleIncenter(const double* stLegs,double* center);
     void LegsTransform(const double* LegPee,const double* TM,double *LegPeeTranformed);
-    void Display(double *vec,int length);
+    void GetYawAxis(const double* TM, double* Yaxis);
+
+    void Rot_2_TM(const double theta, const double*u,double* TM);
+    void TM_2_Rot(const double* TM, double& theta, double* u);
+    void Display(const double *vec,int length);
+    void TrajEllipsoid(const double *p0,const double* p1,const int count,const int totalCount,double* legpos);
 
 };
 
