@@ -13,6 +13,9 @@
 namespace VersatileGait
 {
 
+extern double gridMap[400][400];
+
+
 void parseGoSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
 int GoSlope(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
@@ -24,11 +27,11 @@ struct RobotConfig
 };
 struct WalkGaitParams :public aris::server::GaitParamBase
 {
-    double d;
-    double b;
-    double a;
-    double t;
-    double h;
+    std::int32_t totalCount{ 3000 };
+    double d{ 0.2 };
+    double h{ 0.08 };
+    double a{ 0 };
+    double b{ 0 };
 };
 
 enum GaitType
@@ -46,10 +49,9 @@ class GaitGenerator
 {
 public:
     GaitGenerator();
-    ~GaitGenerator();
+//    ~GaitGenerator();
 
-    void UpdateVision(const double map[400][400]);
-    void UpdateIMU(const double* euler);
+     void UpdateIMU(const double* euler);
     void SetWalkParams(const WalkGaitParams param);
     void UpdateRobotConfig(const double* legPee2b);
 
@@ -59,18 +61,19 @@ public:
     void GenerateTraj(const int count,const int totalCount,RobotConfig& config_2_b0);
 
     // elevationMap w.r.t. the current body config
-    double m_TerrainMap[400][400];
+    double m_TerrainMap[10][10];
     double m_EulerAngles[3];
-    double m_ForceData[6][6];
-    const double m_mapReso{0.01};
+    //double m_ForceData[6][6];
+     const double m_mapReso{0.01};
+
     WalkGaitParams m_Params;
     RobotConfig m_CurrentConfig_b0;
     RobotConfig m_CurrentConfig_g;
     RobotConfig m_NextConfig_b1;
     RobotConfig m_NextConfig_b0;
-    int m_GaitType;
-    int swingID[3]={0,2,4};
-    int stanceID[3]={1,5,3};
+  //  int m_GaitType;
+    int swingID[3]{0,2,4};
+    int stanceID[3]{1,5,3};
 
 // useful functions
     void GetTerrainHeight2b( double* pos);

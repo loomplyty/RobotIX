@@ -1,3 +1,0 @@
-Wed Aug 10 14:39:24 2016
-
-0:server open successful

@@ -95,110 +95,110 @@ bool optTerminated=false;
 
 });*/
 
-static auto visionRecordThread = std::thread([]()
-{
-    while(true)
-    {
-        matrix44 currentPm;
+//static auto visionRecordThread = std::thread([]()
+//{
+//    while(true)
+//    {
+//        matrix44 currentPm;
 
-        visionRecordPipe.recvInNrt(currentPm);
+//        visionRecordPipe.recvInNrt(currentPm);
 
-        auto visiondata = kinect1.getSensorData();
-        terrainAnalysisResult.TerrainRecordAll(visiondata.get().gridMap,currentPm.pm);
-        cout<<"big map recorded."<<endl;
+//        auto visiondata = kinect1.getSensorData();
+//        terrainAnalysisResult.TerrainRecordAll(visiondata.get().gridMap,currentPm.pm);
+//        cout<<"big map recorded."<<endl;
 
-    }
-});
+//    }
+//});
 
-static auto visionCalibrateThread = std::thread([]()
-{
-    while(true)
-    {
-        int postureCount;
-        visionCalibratePipe.recvInNrt(postureCount);
-        auto visiondata = kinect1.getSensorData();
-        terrainAnalysisResult.TerrainRecord(visiondata.get().gridMap);
-        cout<<" map recorded"<<endl;
-        isTerrainCaliRecorded=true;
-    }
-});
+//static auto visionCalibrateThread = std::thread([]()
+//{
+//    while(true)
+//    {
+//        int postureCount;
+//        visionCalibratePipe.recvInNrt(postureCount);
+//        auto visiondata = kinect1.getSensorData();
+//        terrainAnalysisResult.TerrainRecord(visiondata.get().gridMap);
+//        cout<<" map recorded"<<endl;
+//        isTerrainCaliRecorded=true;
+//    }
+//});
 
-static auto visionThread = std::thread([]()
-{
-    while(true)
-    {
-        int a;
-        visionPipe.recvInNrt(a);
+//static auto visionThread = std::thread([]()
+//{
+//    while(true)
+//    {
+//        int a;
+//        visionPipe.recvInNrt(a);
 
-        auto visiondata = kinect1.getSensorData();
-        terrainAnalysisResult.TerrainAnalyze(visiondata.get().gridMap);
+//        auto visiondata = kinect1.getSensorData();
+//        terrainAnalysisResult.TerrainAnalyze(visiondata.get().gridMap);
 
-        if(terrainAnalysisResult.Terrain != FlatTerrain)
-        {
-            /*Adjust x y z theta*/
-            double paramAdjust[4] = {0, 0, 0, 0};
-            bool adjustFinished = false;
-            visionAdjust(paramAdjust, &adjustFinished);
+//        if(terrainAnalysisResult.Terrain != FlatTerrain)
+//        {
+//            /*Adjust x y z theta*/
+//            double paramAdjust[4] = {0, 0, 0, 0};
+//            bool adjustFinished = false;
+//            visionAdjust(paramAdjust, &adjustFinished);
 
-            if(adjustFinished == false)
-            {
-                /*let robot move*/
-                if(paramAdjust[3] != 0)
-                {
-                    visionWalkParam.movetype = turn;
-                    visionWalkParam.turndata = paramAdjust[3];
-                    visionWalkParam.totalCount = 6000/2;
-                    cout<<"terrain turn"<<endl;
-                }
-                else
-                {
-                    visionWalkParam.movetype = flatmove;
-                    memcpy(visionWalkParam.movedata,paramAdjust,3*sizeof(double));
-                    visionWalkParam.totalCount = 5000/2;
-                    cout<<"terrain move"<<endl;
-                }
-            }
-            else
-            {
-                cout<<"Find the Position!!!"<<endl;
-                cout<<"Begin Climb Up!!!"<<endl;
-                visionWalkParam.movetype = stepup;
-                switch (terrainAnalysisResult.Terrain)
-                {
-                case StepUpTerrain:
-                {
-                    /*the robot move body*/
-                    cout<<"Begin Climb Up!!!"<<endl;
-                    visionWalkParam.movetype = stepup;
-                }
-                    break;
-                case StepDownTerrain:
-                {
-                    /*the robot move body*/
-                    cout<<"Begin Climb Down!!!"<<endl;
-                    visionWalkParam.movetype = stepdown;
-                }
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-        else
-        {
-            cout<<"FLAT TERRAIN MOVE"<<endl;
-            cout<<"MOVE FORWARD: "<<0.325<<endl;
-            double move_data[3] = {0, 0, 0.325};
+//            if(adjustFinished == false)
+//            {
+//                /*let robot move*/
+//                if(paramAdjust[3] != 0)
+//                {
+//                    visionWalkParam.movetype = turn;
+//                    visionWalkParam.turndata = paramAdjust[3];
+//                    visionWalkParam.totalCount = 6000/2;
+//                    cout<<"terrain turn"<<endl;
+//                }
+//                else
+//                {
+//                    visionWalkParam.movetype = flatmove;
+//                    memcpy(visionWalkParam.movedata,paramAdjust,3*sizeof(double));
+//                    visionWalkParam.totalCount = 5000/2;
+//                    cout<<"terrain move"<<endl;
+//                }
+//            }
+//            else
+//            {
+//                cout<<"Find the Position!!!"<<endl;
+//                cout<<"Begin Climb Up!!!"<<endl;
+//                visionWalkParam.movetype = stepup;
+//                switch (terrainAnalysisResult.Terrain)
+//                {
+//                case StepUpTerrain:
+//                {
+//                    /*the robot move body*/
+//                    cout<<"Begin Climb Up!!!"<<endl;
+//                    visionWalkParam.movetype = stepup;
+//                }
+//                    break;
+//                case StepDownTerrain:
+//                {
+//                    /*the robot move body*/
+//                    cout<<"Begin Climb Down!!!"<<endl;
+//                    visionWalkParam.movetype = stepdown;
+//                }
+//                    break;
+//                default:
+//                    break;
+//                }
+//            }
+//        }
+//        else
+//        {
+//            cout<<"FLAT TERRAIN MOVE"<<endl;
+//            cout<<"MOVE FORWARD: "<<0.325<<endl;
+//            double move_data[3] = {0, 0, 0.325};
 
-            visionWalkParam.movetype = flatmove;
-            visionWalkParam.totalCount = 5000/2;
-            memcpy(visionWalkParam.movedata,move_data,sizeof(move_data));
-        }
+//            visionWalkParam.movetype = flatmove;
+//            visionWalkParam.totalCount = 5000/2;
+//            memcpy(visionWalkParam.movedata,move_data,sizeof(move_data));
+//        }
 
-        isTerrainAnalysisFinished = true;
-        cout<<"terrrainended"<<endl;
-    }
-});
+//        isTerrainAnalysisFinished = true;
+//        cout<<"terrrainended"<<endl;
+//    }
+//});
 
 
 auto visionWalkParse(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg_out)->void

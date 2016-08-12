@@ -8,6 +8,7 @@ using namespace std;
 
 namespace VersatileGait
 {
+atomic_bool isSlopeStopped(false);
 
 const double stdLegPee2B[18]=
 {  -0.3,-0.85,-0.65,
@@ -21,44 +22,64 @@ const double stdLegPee2B[18]=
 void parseGoSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
 {
    WalkGaitParams param;
-   param.a=0;
-   param.b=0.2;
-   param.d=0.2;
-   param.h=0.08;
+   for (auto &i : params)
+   {
+       if (i.first == "totalCount")
+       {
+           param.totalCount = std::stoi(i.second);
+       }
+       else if (i.first == "distance")
+       {
+           param.d = stod(i.second);
+       }
+       else if (i.first == "height")
+       {
+           param.h = stod(i.second);
+       }
+       else if (i.first == "alpha")
+       {
+           param.a = stod(i.second);
+       }
+       else if (i.first == "beta")
+       {
+           param.b = stod(i.second);
+       }
+   }
    msg.copyStruct(param);
+   cout<<"parse finished"<<endl;
 
-   GaitGenerator g;
-   double map[400][400];
-    std::cout<<"map: "<<map[0][0]<<" "<<map[400][400]<<" "<<map[500][501]<< std::endl;
-    g.UpdateVision(map);
-    double euler[3];
-    euler[0]=0;
-    euler[1]=0;
-    euler[2]=0;
-    g.UpdateIMU(euler);
-   // cout<<"g euler"<<g.m_EulerAngles[0]<<" "<<g.m_EulerAngles[1]<<" "<<g.m_EulerAngles[2]<<endl;
-    g.SetWalkParams(param);
-    g.UpdateRobotConfig(stdLegPee2B);
-//    cout<<"legPee"<<endl;
-//    g.Display(g.m_CurrentConfig_g.LegPee,18);
-//    cout<<"bodypee"<<endl;
-//    g.Display(g.m_CurrentConfig_g.BodyPee,6);
-//    cout<<"legPee"<<endl;
-//    g.Display(g.m_CurrentConfig_b0.LegPee,18);
-//    cout<<"bodypee"<<endl;
-//    g.Display(g.m_CurrentConfig_b0.BodyPee,6);
 
-    g.GaitDetermineNextConfigByVision();
-    cout<<"legPeeNext"<<endl;
-    g.Display(g.m_NextConfig_b0.LegPee,18);
-    cout<<"bodypeeNext"<<endl;
-    g.Display(g.m_NextConfig_b0.BodyPee,6);
+//   GaitGenerator g;
+//    double euler[3];
+//    euler[0]=0;
+//   euler[1]=0;
+//   euler[2]=0;
+//   g.UpdateIMU(euler);
+//   // cout<<"g euler"<<g.m_EulerAngles[0]<<" "<<g.m_EulerAngles[1]<<" "<<g.m_EulerAngles[2]<<endl;
+//    g.SetWalkParams(param);
+//    g.UpdateRobotConfig(stdLegPee2B);
+//////    cout<<"legPee"<<endl;
+//////    g.Display(g.m_CurrentConfig_g.LegPee,18);
+//////    cout<<"bodypee"<<endl;
+//////    g.Display(g.m_CurrentConfig_g.BodyPee,6);
+//////    cout<<"legPee"<<endl;
+//////    g.Display(g.m_CurrentConfig_b0.LegPee,18);
+//////    cout<<"bodypee"<<endl;
+//////    g.Display(g.m_CurrentConfig_b0.BodyPee,6);
 
-    RobotConfig config_0_2_b0;
-    RobotConfig config_N_2_b0;
+//    g.GaitDetermineNextConfigByVision();
+//    cout<<"legPeeNext"<<endl;
+//    g.Display(g.m_NextConfig_b0.LegPee,18);
+//    cout<<"bodypeeNext"<<endl;
+//    g.Display(g.m_NextConfig_b0.BodyPee,6);
 
-    g.GenerateTraj(0,1000,config_0_2_b0);
-    g.GenerateTraj(1000,1000,config_N_2_b0);
+//    RobotConfig config_0_2_b0;
+//    RobotConfig config_N_2_b0;
+
+//    g.GenerateTraj(0,1000,config_0_2_b0);
+
+
+//    g.GenerateTraj(1000,1000,config_N_2_b0);
 
 
 
@@ -78,20 +99,67 @@ void parseGoSlope(const std::string &cmd, const std::map<std::string, std::strin
 
 int GoSlope(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)
 {
+    if(isSlopeStopped==false)
+    {
+        auto &robot = static_cast<Robots::RobotBase &>(model);
+        auto &param=static_cast<const WalkGaitParams &>(param_in);
+        static int stepNumFinished=0;
+        static int stepCount=0;
+        static GaitGenerator g;
+
+         if(stepCount%param.totalCount==0)
+         {
+             cout<<"a new step begins..."<<endl;
+             //ask for map
+            double euler[3];
+           // param.imu_data->toEulBody2Ground(euler,"213");
+            euler[0]=0.1;
+            euler[1]=0.1;
+            euler[2]=0.1;
+            g.UpdateIMU(euler);
+
+             g.SetWalkParams(param);
+             double currentLegPee2b[18];
+             robot.GetPee(currentLegPee2b);
+
+             g.UpdateRobotConfig(currentLegPee2b);
+             //g.UpdateRobotConfig(stdLegPee2B);
+             g.GaitDetermineNextConfigByVision();
+         }
 
 
+         RobotConfig config_2_b0;
+         g.GenerateTraj(stepCount+1,param.totalCount,config_2_b0);
+         if(param.count%300==0)
+         {
+              cout<<"getPeefrommodel"<<endl;
+              g.Display(currentLegPee2b,18);
+
+             cout<<"(stepCount+1)/totalCount"<<double((stepCount+1))/param.totalCount<<endl;
+              cout<<"body"<<config_2_b0.BodyPee[0]<<" "<<config_2_b0.BodyPee[1]<<" "<<config_2_b0.BodyPee[2]<<" "<<config_2_b0.BodyPee[3]<<" "<<config_2_b0.BodyPee[4]<<" "<<config_2_b0.BodyPee[5]<<endl;
+         }
+
+         robot.SetPee(config_2_b0.LegPee);
+         robot.SetPeb(config_2_b0.BodyPee,"213");
+
+         stepCount+=1;
+         if (stepCount==param.totalCount)
+         {
+             stepNumFinished+=1;
+             stepCount=0;
+         }
+         return -1;
+
+    }
+    else
+        return 0;
 }
+
 
 GaitGenerator::GaitGenerator()
 {
 
 }
-
-GaitGenerator::~GaitGenerator()
-{
-
-}
-
 
 void GaitGenerator::GaitDetermineNextConfigByVision()
 {
@@ -232,30 +300,27 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     aris::dynamic::s_inv_pm(TM_b1_2_b0,TM_b0_2_b1);
     LegsTransform(m_NextConfig_b0.LegPee,TM_b0_2_b1,m_NextConfig_b1.LegPee);
 
-    cout<<"estTM B1_2B0"<<endl;
-    Display(est_TM_b1_2_b0,16);
-        cout<<"tri center"<<endl;
-        Display(SPCenter,3);
-        cout<<"BodyPos_2_b1_spCenter"<<endl;
-       Display(BodyPos_2_b1_spCenter,3);
-       cout<<"BodyPos_2_b0_spCenter"<<endl;
-      Display(BodyPos_2_b0_spCenter,3);
-      cout<<"Body_2_b0"<<endl;
-     Display(Body_2_b0,3);
+//    cout<<"estTM B1_2B0"<<endl;
+//    Display(est_TM_b1_2_b0,16);
+//        cout<<"tri center"<<endl;
+//        Display(SPCenter,3);
+//        cout<<"BodyPos_2_b1_spCenter"<<endl;
+//       Display(BodyPos_2_b1_spCenter,3);
+//       cout<<"BodyPos_2_b0_spCenter"<<endl;
+//      Display(BodyPos_2_b0_spCenter,3);
+//      cout<<"Body_2_b0"<<endl;
+//     Display(Body_2_b0,3);
 
-    cout<<"TMB1_2_B0"<<endl;
-    Display(TM_b1_2_b0,16);
-    cout<<"TMB0_2_B1"<<endl;
-    Display(TM_b0_2_b1,16);
-    cout<<"currentlegPee2B0"<<endl;
-    Display(m_CurrentConfig_b0.LegPee,18);
-    cout<<"legPee2B0"<<endl;
-    Display(m_NextConfig_b0.LegPee,18);
-    cout<<"legPee2B1"<<endl;
-    Display(m_NextConfig_b1.LegPee,18);
-
-
-
+//    cout<<"TMB1_2_B0"<<endl;
+//    Display(TM_b1_2_b0,16);
+//    cout<<"TMB0_2_B1"<<endl;
+//    Display(TM_b0_2_b1,16);
+//    cout<<"currentlegPee2B0"<<endl;
+//    Display(m_CurrentConfig_b0.LegPee,18);
+//    cout<<"legPee2B0"<<endl;
+//    Display(m_NextConfig_b0.LegPee,18);
+//    cout<<"legPee2B1"<<endl;
+//    Display(m_NextConfig_b1.LegPee,18);
 
 }
 
@@ -337,13 +402,12 @@ void GaitGenerator::GaitDetermineNextConfigByHuman(const double Pitch_2_b0, cons
            BodyPos_2_b1_spCenter[0]=dstraight/2*sin(m_Params.a)+BodyOffset[0];
            BodyPos_2_b1_spCenter[1]=-stdLegPee2B[1]+BodyOffset[1];//stdLegPee2B[1]=-0.85
            BodyPos_2_b1_spCenter[2]=dstraight/2*cos(m_Params.a)+BodyOffset[2];
-           cout<<"TM_b1_2_b0"<<endl;
-           Display(TM_b1_2_b0,16);
+
            aris::dynamic::s_pm_dot_v3(TM_b1_2_b0,BodyPos_2_b1_spCenter,BodyPos_2_b0_spCenter);
-           cout<<"BodyPos_2_b1_spCenter"<<endl;
-          Display(BodyPos_2_b1_spCenter,3);
-          cout<<"BodyPos_2_b0_spCenter"<<endl;
-          Display(BodyPos_2_b0_spCenter,3);
+//           cout<<"BodyPos_2_b1_spCenter"<<endl;
+//          Display(BodyPos_2_b1_spCenter,3);
+//          cout<<"BodyPos_2_b0_spCenter"<<endl;
+//          Display(BodyPos_2_b0_spCenter,3);
        //    cout<<" BodyPos_2_b0_spCenter"<<endl;
        //    Display(BodyPos_2_b0_spCenter,3);
        //    cout<<" BodyPos_2_b1_spCenter"<<endl;
@@ -369,27 +433,27 @@ void GaitGenerator::GaitDetermineNextConfigByHuman(const double Pitch_2_b0, cons
            aris::dynamic::s_inv_pm(TM_b1_2_b0,TM_b0_2_b1);
            LegsTransform(m_NextConfig_b0.LegPee,TM_b0_2_b1,m_NextConfig_b1.LegPee);
 
-           cout<<"estTM B1_2B0"<<endl;
-           Display(est_TM_b1_2_b0,16);
-               cout<<"tri center"<<endl;
-               Display(SPCenter,3);
-               cout<<"BodyPos_2_b1_spCenter"<<endl;
-              Display(BodyPos_2_b1_spCenter,3);
-              cout<<"BodyPos_2_b0_spCenter"<<endl;
-             Display(BodyPos_2_b0_spCenter,3);
-             cout<<"Body_2_b0"<<endl;
-            Display(Body_2_b0,3);
+//           cout<<"estTM B1_2B0"<<endl;
+//           Display(est_TM_b1_2_b0,16);
+//               cout<<"tri center"<<endl;
+//               Display(SPCenter,3);
+//               cout<<"BodyPos_2_b1_spCenter"<<endl;
+//              Display(BodyPos_2_b1_spCenter,3);
+//              cout<<"BodyPos_2_b0_spCenter"<<endl;
+//             Display(BodyPos_2_b0_spCenter,3);
+//             cout<<"Body_2_b0"<<endl;
+//            Display(Body_2_b0,3);
 
-           cout<<"TMB1_2_B0"<<endl;
-           Display(TM_b1_2_b0,16);
-           cout<<"TMB0_2_B1"<<endl;
-           Display(TM_b0_2_b1,16);
-           cout<<"currentlegPee2B0"<<endl;
-           Display(m_CurrentConfig_b0.LegPee,18);
-           cout<<"legPee2B0"<<endl;
-           Display(m_NextConfig_b0.LegPee,18);
-           cout<<"legPee2B1"<<endl;
-           Display(m_NextConfig_b1.LegPee,18);
+//           cout<<"TMB1_2_B0"<<endl;
+//           Display(TM_b1_2_b0,16);
+//           cout<<"TMB0_2_B1"<<endl;
+//           Display(TM_b0_2_b1,16);
+//           cout<<"currentlegPee2B0"<<endl;
+//           Display(m_CurrentConfig_b0.LegPee,18);
+//           cout<<"legPee2B0"<<endl;
+//           Display(m_NextConfig_b0.LegPee,18);
+//           cout<<"legPee2B1"<<endl;
+//           Display(m_NextConfig_b1.LegPee,18);
 }
 
 void GaitGenerator::UpdateRobotConfig(const double *legPee2b)//legPee2b is got the Robot model
@@ -404,9 +468,12 @@ void GaitGenerator::UpdateRobotConfig(const double *legPee2b)//legPee2b is got t
 
     double TM_b0_2_g[16];
     aris::dynamic::s_pe2pm(m_CurrentConfig_g.BodyPee,TM_b0_2_g,"213");
-    Display(TM_b0_2_g,16);
 
     LegsTransform(legPee2b,TM_b0_2_g,m_CurrentConfig_g.LegPee);
+    double swingid[3];
+    memcpy(swingid,swingID,sizeof(double)*3);
+    memcpy(swingID,stanceID,sizeof(double)*3);
+    memcpy(stanceID,swingid,sizeof(double)*3);
 }
 
 
@@ -414,12 +481,12 @@ void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotCon
 {
     double TM_b1_2_b0[16];
     aris::dynamic::s_pe2pm(m_NextConfig_b0.BodyPee,TM_b1_2_b0,"213");
-    cout<<"TM_b1_2_b0"<<endl;
-    Display(TM_b1_2_b0,16);
+//    cout<<"TM_b1_2_b0"<<endl;
+//    Display(TM_b1_2_b0,16);
 
 
     double s;
-    s=(1-cos(count/totalCount*PI))/2;
+    s=(1-cos(double(count)/totalCount*PI))/2;
 
     // compute body pee, pos
     if(m_Params.b!=0)
@@ -443,9 +510,9 @@ void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotCon
     double RotAxis[3];
     double RotAngle;
     TM_2_Rot(TM_b1_2_b0,RotAngle,RotAxis);
-    cout<<"rot axis"<<endl;
-    Display(RotAxis,3);
-    cout<<"rot angle:"<<RotAngle<<endl;
+//    cout<<"rot axis"<<endl;
+//    Display(RotAxis,3);
+//    cout<<"rot angle:"<<RotAngle<<endl;
 
     double TM_2_b0[16];
     Rot_2_TM(s*RotAngle,RotAxis,TM_2_b0);
@@ -471,14 +538,14 @@ void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotCon
         aris::dynamic::s_pm_dot_pnt(TM_2_b0,&swLegPee2b[3*i],&swLegPee2b0[3*i]);
         memcpy(&config_2_b0.LegPee[swingID[i]*3],&swLegPee2b0[3*i],sizeof(double)*3);
     }
-    cout<<"swingLeg2b"<<endl;
-    Display(swLegPee2b,9);
-    cout<<"tm_2_b0"<<endl;
-    Display(TM_2_b0,16);
-    cout<<"legPee2b0"<<endl;
-    Display(config_2_b0.LegPee,18);
-    cout<<"bodyPee"<<endl;
-    Display(config_2_b0.BodyPee,6);
+//    cout<<"swingLeg2b"<<endl;
+//    Display(swLegPee2b,9);
+//    cout<<"tm_2_b0"<<endl;
+//    Display(TM_2_b0,16);
+//    cout<<"legPee2b0"<<endl;
+//    Display(config_2_b0.LegPee,18);
+//    cout<<"bodyPee"<<endl;
+//    Display(config_2_b0.BodyPee,6);
 
 }
 
@@ -595,15 +662,10 @@ void GaitGenerator::TMbody(const double *bodyP, const double *bodyR, double *tmb
 }
 void GaitGenerator::SetWalkParams(const WalkGaitParams param)
 {
-     cout<<"param size"<<sizeof(param)<<endl;
-     memcpy(&m_Params,&param,sizeof(param));
-     cout<<"param b"<<m_Params.b<<endl;
-}
+      memcpy(&m_Params,&param,sizeof(param));
+ }
 
-void GaitGenerator::UpdateVision(const double map[400][400])
-{
-    memcpy(m_TerrainMap,map,sizeof(map));
-}
+
 void GaitGenerator::UpdateIMU(const double* euler)
 {
     memcpy(m_EulerAngles,euler,sizeof(double)*3);
@@ -627,7 +689,7 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     else
         grid[1]=ceil(gridRaw[1]);
 
-    pos[1]=m_TerrainMap[grid[0]][grid[1]];
+    pos[1]=gridMap[grid[0]][grid[1]];
     // for test
     pos[1]=-0.85;
 }
@@ -773,10 +835,18 @@ void GaitGenerator::TM_2_Rot(const double *TM, double& theta, double *u)
     q[2]=(TM[2]-TM[8])/(4*q[0]);
     q[3]=(TM[4]-TM[1])/(4*q[0]);
      theta=acos(q[0])*2;
-    u[0]=q[1]/sin(theta/2);
-    u[1]=q[2]/sin(theta/2);
-    u[2]=q[3]/sin(theta/2);
-
+     if(theta==0)
+     {
+         u[0]=0;
+         u[1]=1;
+         u[2]=0;
+     }
+     else
+     {
+         u[0]=q[1]/sin(theta/2);
+         u[1]=q[2]/sin(theta/2);
+         u[2]=q[3]/sin(theta/2);
+     }
 }
 void GaitGenerator::Rot_2_TM(const double theta, const double *u, double *TM)
 {
@@ -815,8 +885,7 @@ void GaitGenerator::TrajEllipsoid(const double *p0, const double *p1, const int 
     axisShort[0]=axisShort[0]/axisShort[1]*m_Params.h;
     axisShort[1]=m_Params.h;
     axisShort[2]=axisShort[2]/axisShort[1]*m_Params.h;
-    cout<<"axis short"<<endl;
-    Display(axisShort,3);
+
 
     legpos[0]=(p0[0]+p1[0])/2+(p0[0]-p1[0])/2*cos(theta)+axisShort[0]*sin(theta);
     legpos[1]=(p0[1]+p1[1])/2+(p0[1]-p1[1])/2*cos(theta)+axisShort[1]*sin(theta);
