@@ -106,10 +106,13 @@ int GoSlope(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &par
         static int stepNumFinished=0;
         static int stepCount=0;
         static GaitGenerator g;
+       // static aris::dynamic::FloatMarker beginMak{ robot.ground() };
+
 
          if(stepCount%param.totalCount==0)
          {
-             cout<<"a new step begins..."<<endl;
+             cout<<"a new step begins..."<<"stepCount:"<<stepCount<<endl;
+             cout<<"count "<<param.count<<endl;
              //ask for map
             double euler[3];
            // param.imu_data->toEulBody2Ground(euler,"213");
@@ -118,29 +121,39 @@ int GoSlope(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &par
             euler[2]=0.1;
             g.UpdateIMU(euler);
 
-             g.SetWalkParams(param);
+            g.SetWalkParams(param);
              double currentLegPee2b[18];
-             robot.GetPee(currentLegPee2b);
+//             beginMak.setPrtPm(*robot.body().pm());
+//             beginMak.update();
 
-             g.UpdateRobotConfig(currentLegPee2b);
-             //g.UpdateRobotConfig(stdLegPee2B);
-             g.GaitDetermineNextConfigByVision();
+            robot.GetPee(currentLegPee2b,robot.body());
+            // g.Display(*robot.body().pm(),16);
+
+            g.UpdateRobotConfig(currentLegPee2b);
+            g.GaitDetermineNextConfigByVision();
+//             cout<<"getPeefrommodel"<<endl;
+//             g.Display(currentLegPee2b,18);
+//             cout<<"nextPee"<<endl;
+//             g.Display(g.m_NextConfig_b0.LegPee,18);
+//             cout<<"nextPee"<<endl;
+//             g.Display(g.m_CurrentConfig_b0.LegPee,18);
          }
 
 
          RobotConfig config_2_b0;
-         g.GenerateTraj(stepCount+1,param.totalCount,config_2_b0);
+        g.GenerateTraj(stepCount+1,param.totalCount,config_2_b0);
          if(param.count%300==0)
          {
-              cout<<"getPeefrommodel"<<endl;
-              g.Display(currentLegPee2b,18);
 
-             cout<<"(stepCount+1)/totalCount"<<double((stepCount+1))/param.totalCount<<endl;
+              cout<<"(stepCount)/totalCount"<<double((stepCount))/param.totalCount<<endl;
               cout<<"body"<<config_2_b0.BodyPee[0]<<" "<<config_2_b0.BodyPee[1]<<" "<<config_2_b0.BodyPee[2]<<" "<<config_2_b0.BodyPee[3]<<" "<<config_2_b0.BodyPee[4]<<" "<<config_2_b0.BodyPee[5]<<endl;
+              cout<<"legPee2b0"<<endl;
+              g.Display(config_2_b0.LegPee,18);
+
          }
 
-         robot.SetPee(config_2_b0.LegPee);
-         robot.SetPeb(config_2_b0.BodyPee,"213");
+        robot.SetPeb(config_2_b0.BodyPee,"213");
+        robot.SetPee(config_2_b0.LegPee,robot.body());
 
          stepCount+=1;
          if (stepCount==param.totalCount)
@@ -222,7 +235,9 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     GetTerrainHeight2b(&SWFoothold_2_b0[0]);
     GetTerrainHeight2b(&SWFoothold_2_b0[3]);
     GetTerrainHeight2b(&SWFoothold_2_b0[6]);
-//    Display(SWFoothold_2_b0,9);
+   // cout<<"swingID"<<swingID[0]<<swingID[1]<<swingID[2]<<endl;
+  //  cout<<"swing foothold ........."<<endl;
+  //  Display(SWFoothold_2_b0,9);
 
 //3.  determine bodypos w.r.t. b0
     double x1_2_b0[3];
@@ -437,10 +452,10 @@ void GaitGenerator::GaitDetermineNextConfigByHuman(const double Pitch_2_b0, cons
 //           Display(est_TM_b1_2_b0,16);
 //               cout<<"tri center"<<endl;
 //               Display(SPCenter,3);
-//               cout<<"BodyPos_2_b1_spCenter"<<endl;
-//              Display(BodyPos_2_b1_spCenter,3);
-//              cout<<"BodyPos_2_b0_spCenter"<<endl;
-//             Display(BodyPos_2_b0_spCenter,3);
+////               cout<<"BodyPos_2_b1_spCenter"<<endl;
+////              Display(BodyPos_2_b1_spCenter,3);
+////              cout<<"BodyPos_2_b0_spCenter"<<endl;
+////             Display(BodyPos_2_b0_spCenter,3);
 //             cout<<"Body_2_b0"<<endl;
 //            Display(Body_2_b0,3);
 
@@ -475,7 +490,6 @@ void GaitGenerator::UpdateRobotConfig(const double *legPee2b)//legPee2b is got t
     memcpy(swingID,stanceID,sizeof(double)*3);
     memcpy(stanceID,swingid,sizeof(double)*3);
 }
-
 
 void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotConfig& config_2_b0)
 {
@@ -520,12 +534,12 @@ void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotCon
     TM_2_b0[7]=config_2_b0.BodyPee[1];
     TM_2_b0[11]=config_2_b0.BodyPee[2];
 
-    aris::dynamic::s_pm2pe(TM_2_b0,config_2_b0.BodyPee,"213");
+    aris::dynamic::s_pm2pe(TM_2_b0,config_2_b0.BodyPee,"213");//body ok
 
     //stance Leg pee
     for (int i=0;i<3;i++)
     {
-        memcpy(&config_2_b0.LegPee[stanceID[i]*3],&m_CurrentConfig_b0.LegPee[stanceID[i]*3],sizeof(double)*3);
+        memcpy(&config_2_b0.LegPee[stanceID[i]*3],&m_CurrentConfig_b0.LegPee[stanceID[i]*3],sizeof(double)*3);//stancelegs are ok
     }
 
     //swing Leg Pee
@@ -534,18 +548,19 @@ void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotCon
 
     for(int i=0;i<3;i++)
     {
-        TrajEllipsoid(&m_CurrentConfig_b0.LegPee[swingID[i]*3],&m_NextConfig_b1.LegPee[swingID[i]*3],count,totalCount,&swLegPee2b[i*3]);
+        TrajEllipsoid(&m_CurrentConfig_b0.LegPee[swingID[i]*3],&m_NextConfig_b1.LegPee[swingID[i]*3],count,totalCount,&swLegPee2b[i*3]);// a problem is here
         aris::dynamic::s_pm_dot_pnt(TM_2_b0,&swLegPee2b[3*i],&swLegPee2b0[3*i]);
+
         memcpy(&config_2_b0.LegPee[swingID[i]*3],&swLegPee2b0[3*i],sizeof(double)*3);
     }
 //    cout<<"swingLeg2b"<<endl;
-//    Display(swLegPee2b,9);
-//    cout<<"tm_2_b0"<<endl;
-//    Display(TM_2_b0,16);
+//     Display(swLegPee2b,9);
+////    cout<<"tm_2_b0"<<endl;
+////    Display(TM_2_b0,16);
 //    cout<<"legPee2b0"<<endl;
 //    Display(config_2_b0.LegPee,18);
-//    cout<<"bodyPee"<<endl;
-//    Display(config_2_b0.BodyPee,6);
+//     cout<<"bodyPee"<<endl;
+//     Display(config_2_b0.BodyPee,6);
 
 }
 
@@ -869,8 +884,8 @@ void GaitGenerator::Rot_2_TM(const double theta, const double *u, double *TM)
  }
 void GaitGenerator::TrajEllipsoid(const double *p0, const double *p1, const int count, const int totalCount, double *legpos)
 {
-    double theta;
-    theta=PI*(1-cos(count/totalCount*PI))/2;
+     double theta;
+    theta=PI*(1-cos(double(count)/totalCount*PI))/2;
     double axisShort[3];
     double x[3];
     x[0]=1;
@@ -885,6 +900,10 @@ void GaitGenerator::TrajEllipsoid(const double *p0, const double *p1, const int 
     axisShort[0]=axisShort[0]/axisShort[1]*m_Params.h;
     axisShort[1]=m_Params.h;
     axisShort[2]=axisShort[2]/axisShort[1]*m_Params.h;
+
+//    rt_printf("theta %f\n",theta);
+
+
 
 
     legpos[0]=(p0[0]+p1[0])/2+(p0[0]-p1[0])/2*cos(theta)+axisShort[0]*sin(theta);

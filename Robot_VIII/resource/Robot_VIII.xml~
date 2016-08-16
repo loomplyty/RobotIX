@@ -533,13 +533,13 @@
                 </wk_param>
             </wk>
             <wks default="wks_param">
-                <wk_param type="group">
-                    <totalCount abbreviation="t" type="int" default="3000"/>
-                    <distance abbreviation="d" type="double" default="0.3"/>
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="5000"/>
+                    <distance abbreviation="d" type="double" default="0.2"/>
                     <height abbreviation="h" type="double" default="0.08"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>
-                </wk_param>
+                </wks_param>
             </wks>
             <ro/>
         </Commands>

@@ -534,8 +534,8 @@
             </wk>
             <wks default="wks_param">
                 <wks_param type="group">
-                    <totalCount abbreviation="t" type="int" default="3000"/>
-                    <distance abbreviation="d" type="double" default="0.3"/>
+                    <totalCount abbreviation="t" type="int" default="4000"/>
+                    <distance abbreviation="d" type="double" default="0.2"/>
                     <height abbreviation="h" type="double" default="0.08"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>

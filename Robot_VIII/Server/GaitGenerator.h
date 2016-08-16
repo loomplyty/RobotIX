@@ -77,9 +77,9 @@ public:
 
 // useful functions
     void GetTerrainHeight2b( double* pos);
-     void GetBodyOffset(const double yaw, const double pitch, double* offset);
-     void GetPlaneFromStanceLegs(const double* stanceLegs,double* normalVector);
-     void TMbody(const double* bodyP,const double* bodyR,double*tmbody);
+    void GetBodyOffset(const double yaw, const double pitch, double* offset);
+    void GetPlaneFromStanceLegs(const double* stanceLegs,double* normalVector);
+    void TMbody(const double* bodyP,const double* bodyR,double*tmbody);
     void Trans(const double* trans,double*TM);
     void Rx(const double rx,double* TM);
     void Ry(const double ry,double* TM);
