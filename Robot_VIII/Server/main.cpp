@@ -670,6 +670,7 @@ int main(int argc, char *argv[])
 
     //slope walking
     rs.addCmd("wks",VersatileGait::parseGoSlope,VersatileGait::GoSlope);
+    rs.addCmd("swks",VersatileGait::parseStopSlope,VersatileGait::GoSlope);
 
     Rofo::RofoWalkInit();
     rs.open();

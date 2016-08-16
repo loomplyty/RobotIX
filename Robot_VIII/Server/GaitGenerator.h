@@ -15,6 +15,33 @@ namespace VersatileGait
 
 extern double gridMap[400][400];
 
+enum GaitType
+{
+    Flat=0,
+    Obstacle=1,
+    Slope=2,
+};
+enum GaitMode
+{
+    Single=1,
+    Multi=2,
+};
+enum GaitState
+{
+    None=0,
+    Walking=1,
+    Scanning=2,
+//    PrepareToEnd=3,
+    End=4,
+};
+enum GaitCommand
+{
+    NoCommand=0,
+//    Go=1,
+    Stop=2,
+
+};
+void parseStopSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
 void parseGoSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
@@ -32,14 +59,9 @@ struct WalkGaitParams :public aris::server::GaitParamBase
     double h{ 0.08 };
     double a{ 0 };
     double b{ 0 };
+    int m{GaitMode::Single};
 };
 
-enum GaitType
-{
-    Flat=0,
-    Obstacle=1,
-    Slope=2,
-};
 
 
 
@@ -51,7 +73,7 @@ public:
     GaitGenerator();
 //    ~GaitGenerator();
 
-     void UpdateIMU(const double* euler);
+    void UpdateIMU(const double* euler);
     void SetWalkParams(const WalkGaitParams param);
     void UpdateRobotConfig(const double* legPee2b);
 

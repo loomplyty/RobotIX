@@ -539,8 +539,10 @@
                     <height abbreviation="h" type="double" default="0.08"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>
+                    <mode abbreviation="m" type="int" default="2"/>
                 </wks_param>
             </wks>
+            <swks/>
             <ro/>
         </Commands>
     </Server>
