@@ -1,2 +1,0 @@
-/home/hex/Desktop/Robot_VIII/build/CMakeFiles/Server.dir
-/home/hex/Desktop/Robot_VIII/build/CMakeFiles/rbt.dir
