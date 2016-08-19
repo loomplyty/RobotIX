@@ -20,7 +20,7 @@
             <S2jpe type="matrix">{ 0, 0,      0,     0, -PI / 2, 0 }</S2jpe>
             <S3ipe type="matrix">{ 0, 0.059, -0.034, 0, -PI / 2, 0 }</S3ipe>
             <S3jpe type="matrix">{ 0, 0,      0,     0, -PI / 2, 0 }</S3jpe>
-            <Sfipe type="matrix">{ 0.065, 0, 0, 0, 0, 0 }</Sfipe>
+            <Sfipe type="matrix">{ 0.114, -0.024, 0, 0, 0, 0 }</Sfipe>
             <Sfjpe type="matrix">{ 0,   0, 0, 0, 0, 0 }</Sfjpe>
             <LFpe type="matrix">{-0.05433 , 0 , -0.3300 + 0.0047, PI/2,  PI* 5/6,   -PI/2-PI*75/180}</LFpe>
             <LMpe type="matrix">{-0.10241 , 0 ,  0,         PI/2,  PI* 6/6,   -PI/2-PI*75/180}</LMpe>
@@ -532,17 +532,36 @@
                     <beta abbreviation="b" type="double" default="0"/>
                 </wk_param>
             </wk>
-            <wks default="wks_param">
+            <gsv default="wks_param">
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="4000"/>
                     <distance abbreviation="d" type="double" default="0.2"/>
                     <height abbreviation="h" type="double" default="0.08"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>
-                    <mode abbreviation="m" type="int" default="2"/>
+                    <mode abbreviation="m" type="int" default="1"/>
+                  </wks_param>
+            </gsv>
+            <adj default="adj_param">
+                <adj_param type="unique">
+                    <forward abbreviation="f"/>
+                    <backward abbreviation="b"/>
+                    <left abbreviation="l"/>
+                    <right abbreviation="r"/>
+                    <stop abbreviation="s"/>
+                  </adj_param>
+            </adj>
+            <gsh default="wks_param">
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="0.1"/>
+                    <height abbreviation="h" type="double" default="0.08"/>
+                    <alpha abbreviation="a" type="double" default="0"/>
+                    <beta abbreviation="b" type="double" default="0"/>
+                    <dpitch abbreviation="p" type="double" default="0"/>
+                    <droll abbreviation="r" type="double" default="0"/>
                 </wks_param>
-            </wks>
-            <swks/>
+            </gsh>
             <ro/>
         </Commands>
     </Server>
@@ -635,7 +654,7 @@
         </EtherCat>
     </Controller>
     <Sensors>
-        <IMU active="false" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
+        <IMU active="false" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,PI/2,PI/2,PI}" PeImu2Body="{0,0,0,3*PI/2,PI/2,0}"/>
         <Vision type="kinect2.0"/>
     </Sensors>
 </RobotVIII>

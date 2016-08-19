@@ -73,3 +73,5 @@ Server/twist_waist.h
 resource/Robot_VIII.xml
 Server/GaitGenerator.cpp
 Server/GaitGenerator.h
+Server/GaitPlanner.cpp
+Server/GaitPlanner.h

@@ -77,6 +77,12 @@ bool optInit=false;
 bool optTerminated=false;
 
 
+enum  VISION_DEMAND_TYPE
+{
+    FIRST_STEP=0,
+    CONTINUOUS_STEP=1,
+};
+
 /*static auto optThread= std::thread([]()
 {
     while(true)
@@ -669,8 +675,9 @@ int main(int argc, char *argv[])
 
 
     //slope walking
-    rs.addCmd("wks",VersatileGait::parseGoSlope,VersatileGait::GoSlope);
-    rs.addCmd("swks",VersatileGait::parseStopSlope,VersatileGait::GoSlope);
+    rs.addCmd("gsv",VersatileGait::parseGoSlopeVision,VersatileGait::GoSlopeByVision);
+    rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVision);
+    rs.addCmd("gsh",VersatileGait::parseGoSlopeHuman,VersatileGait::GoSlopeByHuman);
 
     Rofo::RofoWalkInit();
     rs.open();

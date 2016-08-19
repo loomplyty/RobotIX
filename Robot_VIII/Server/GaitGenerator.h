@@ -31,21 +31,23 @@ enum GaitState
     None=0,
     Walking=1,
     Scanning=2,
-//    PrepareToEnd=3,
+    //    PrepareToEnd=3,
     End=4,
 };
 enum GaitCommand
 {
     NoCommand=0,
-//    Go=1,
+    //    Go=1,
     Stop=2,
 
 };
-void parseStopSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseAdjustSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
-void parseGoSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseGoSlopeVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseGoSlopeHuman(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
-int GoSlope(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
+int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
+int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
 
 struct RobotConfig
 {
@@ -55,7 +57,8 @@ struct RobotConfig
 struct WalkGaitParams :public aris::server::GaitParamBase
 {
     std::int32_t totalCount{ 3000 };
-    double d{ 0.2 };
+    double n{1};
+    double d{ 0.1 };
     double h{ 0.08 };
     double a{ 0 };
     double b{ 0 };
@@ -64,17 +67,14 @@ struct WalkGaitParams :public aris::server::GaitParamBase
 
 
 
-
-
-
 class GaitGenerator
 {
 public:
     GaitGenerator();
-//    ~GaitGenerator();
+    //    ~GaitGenerator();
 
     void UpdateIMU(const double* euler);
-    void SetWalkParams(const WalkGaitParams param);
+    void SetWalkParams(const WalkGaitParams param,const double dDist,const double dAngle);
     void UpdateRobotConfig(const double* legPee2b);
 
     void GaitDetermineNextConfigByVision();
@@ -86,18 +86,18 @@ public:
     double m_TerrainMap[10][10];
     double m_EulerAngles[3];
     //double m_ForceData[6][6];
-     const double m_mapReso{0.01};
+    const double m_mapReso{0.01};
 
     WalkGaitParams m_Params;
     RobotConfig m_CurrentConfig_b0;
     RobotConfig m_CurrentConfig_g;
     RobotConfig m_NextConfig_b1;
     RobotConfig m_NextConfig_b0;
-  //  int m_GaitType;
+    //  int m_GaitType;
     int swingID[3]{0,2,4};
     int stanceID[3]{1,5,3};
 
-// useful functions
+    // useful functions
     void GetTerrainHeight2b( double* pos);
     void GetBodyOffset(const double yaw, const double pitch, double* offset);
     void GetPlaneFromStanceLegs(const double* stanceLegs,double* normalVector);
