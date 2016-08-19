@@ -151,8 +151,6 @@ void parseGoSlopeHuman(const std::string &cmd, const std::map<std::string, std::
 
         }
 
-
-
     }
     msg.copyStruct(param);
     cout<<"parse finished"<<endl;

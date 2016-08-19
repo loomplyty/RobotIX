@@ -17,23 +17,7 @@ static int GaitStairCount;
     {
         if(i.first=="file")
         {
-     /*       static std::map<std::string, std::tuple<int, std::unique_ptr<double> > > walkFileMap;
 
-            const auto found = walkFileMap.find(i.second);
-            if (found != walkFileMap.end())
-            {
-                //步态已经存在
-                std::tie(param.gaitCount, std::ignore) = found->second;
-                param.pIn = std::get<3>(found->second).get();
-                std::cout << "gostair count:" << param.count << std::endl;
-
-            }
-            else
-            {
-                if (walkFileMap.size() > 1)
-                {
-                    throw std::runtime_error("only one path is allowed");
-                }
 
                 //插入步态*/
                 std::ifstream file;
@@ -63,12 +47,7 @@ static int GaitStairCount;
                 file.close();
 
                 cout<<"gaitnum:"<<gaitNum<<endl;
-               // cout<<"pin 1: "<<param.pIn[0]<<" "<<param.pIn[17]<<" "<<param.pIn[18]<<endl;
-               // cout<<"pin end: "<<param.pIn[gaitNum*18-17]<<" "<<param.pIn[gaitNum*18-16]<<" "<<param.pIn[gaitNum*18-1]<<endl;
-               // cout<<"pin 1 global poiter: "<<Gait_GoUpStair[0]<<" "<<Gait_GoUpStair[17]<<" "<<Gait_GoUpStair[18]<<endl;
 
-              //  walkFileMap.insert(std::make_pair(i.second, std::make_tuple(gaitNum, std::move(p))));
-            //}
         }
 
         else

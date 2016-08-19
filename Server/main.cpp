@@ -616,7 +616,7 @@ int main(int argc, char *argv[])
     {
         std::cout << "you did not type in robot name, in this case ROBOT-III will start" << std::endl;
         //xml_address = "/usr/Robots/resource/Robot_Type_I/Robot_III/Robot_III.xml";
-        xml_address ="/home/hex/Desktop/Robot_VIII/resource/Robot_VIII.xml";
+        xml_address ="/home/hex/Desktop/RobotVIII/resource/Robot_VIII.xml";
     }
     else if (std::string(argv[1]) == "III")
     {
