@@ -457,7 +457,8 @@
             <RR_M1 type="single_component_motion" active="true" prt_m="RR_Thigh" prt_n="RR_P1a" mak_i="P1i" mak_j="P1j" frc_coe="Mot_friction" component="2"/>
             <RR_M2 type="single_component_motion" active="true" prt_m="RR_P2b" prt_n="RR_P2a" mak_i="P2i" mak_j="P2j" frc_coe="Mot_friction" component="2"/>
             <RR_M3 type="single_component_motion" active="true" prt_m="RR_P3b" prt_n="RR_P3a" mak_i="P3i" mak_j="P3j" frc_coe="Mot_friction" component="2"/>
-        </Motion>
+            <NEW_MOT type="single_component_motion" active="true" prt_m="RR_P3b" prt_n="RR_P3a" mak_i="P3i" mak_j="P3j" frc_coe="Mot_friction" component="2"/>
+</Motion>
         <Force>
             <LF_F1 type="single_component_force" active="true" prt_m="LF_Thigh" prt_n="LF_P1a" mak_i="P1i" mak_j="P1j" component="2"/>
             <LF_F2 type="single_component_force" active="true" prt_m="LF_P2b" prt_n="LF_P2a" mak_i="P2i" mak_j="P2j" component="2"/>
@@ -639,7 +640,7 @@
 		</EK1122>
             </SlaveType>
             <Slave>
-                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1"/>
+                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1" kp="120"/>
                 <Motion2 type="ElmoSoloWhistle"  min_pos="0.0669" max_pos="10.080" max_vel="0.9481" home_pos="0.669" input2count="9216000" abs_id="0"/>
                 <Motion3 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 2"/>
                 <Motion4 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 5"/>
@@ -671,7 +672,7 @@
         </EtherCat>
     </Controller>
     <Sensors>
-        <IMU active="false" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,0,-PI/2,PI}" PeImu2Body="{0,0,0,0,PI/2,0}"/>
+        <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,PI,PI/2,3*PI/2}" PeImu2Body="{0,0,0,0,PI/2,PI/2}"/>
         <Vision type="kinect2.0"/>
     </Sensors>
     <UDP remote_ip="192.168.1.101" remote_port="6661" local_port="6660"/>

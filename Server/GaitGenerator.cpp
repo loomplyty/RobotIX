@@ -163,7 +163,7 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
     auto &param=static_cast<const WalkGaitParams &>(param_in);
     static aris::dynamic::FloatMarker beginMak{robot.ground()};
 
-    static int stepNumFinished=0;
+     static int stepNumFinished=0;
     static int stepCount=0;
 
     switch(gaitState)
@@ -262,7 +262,6 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
     }
 }
 
-
 // only one step gait
 int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)
 {
@@ -283,8 +282,8 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         {
             rt_printf("a new step begins...\n");
             double euler[3];
-            //  param.imu_data->toEulBody2Ground(euler,"213");
-            //euler[0]=0;
+            param.imu_data->toEulBody2Ground(euler,"213");
+            euler[0]=0;// yaw be zero
             //euler[1]=10/180*3.1415;
             //euler[2]=0;
             rt_printf("imu_data:%f %f %f\n",euler[0],euler[1],euler[2]);
@@ -293,7 +292,6 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
 
             g.SetWalkParams(param,0,0);
             double currentLegPee2b[18];
-
 
             robot.GetPee(currentLegPee2b,robot.body());
 
@@ -348,7 +346,6 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     //  1. get the estimated next robot configuration
     double est_TM_b1_2_b0[16];
     double dstraight;
-
     if(m_Params.b!=0)
     {
         double r;
@@ -512,6 +509,7 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     //        Display(m_NextConfig_b1.LegPee,18);
 
 }
+
 
 void GaitGenerator::GaitDetermineNextConfigByHuman(const double Pitch_2_b0, const double Roll_2_b0)
 {
@@ -760,6 +758,9 @@ void GaitGenerator::GenerateTraj(const int count, const int totalCount, RobotCon
 //        Display(config_2_b0.LegPee,18);
 //    //     cout<<"bodyPee"<<endl;
 //    //     Display(config_2_b0.BodyPee,6);
+
+
+    // add touch down verification
 
 }
 
