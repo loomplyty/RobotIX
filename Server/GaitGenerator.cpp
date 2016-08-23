@@ -257,8 +257,15 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
         {
             rt_printf("a new step begins ...\n");
             double euler[3];
-            param.imu_data->toEulBody2Ground(euler,"213");
+            double eulerRaw[6];
+
+           // param.imu_data->toEulBody2Ground(&eulerRaw[3],"213");
+            double TMRaw[16];
+            aris::dynamic::s_pe2pm(eulerRaw,TMRaw,"213");
+            aris::dynamic::s_pm2pe(TMRaw,eulerRaw,"213");
+            memcpy(euler,&eulerRaw[3],sizeof(double)*3);
             rt_printf("imu_data:%f %f %f\n",euler[0],euler[1],euler[2]);
+
             euler[0]=0;//let yaw be zero
             g.UpdateIMU(euler);
 
@@ -345,7 +352,14 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         {
             rt_printf("a new step begins...\n");
             double euler[3];
-            //param.imu_data->toEulBody2Ground(euler,"213");
+            double eulerRaw[6];
+
+           // param.imu_data->toEulBody2Ground(&eulerRaw[3],"213");
+            double TMRaw[16];
+            aris::dynamic::s_pe2pm(eulerRaw,TMRaw,"213");
+            aris::dynamic::s_pm2pe(TMRaw,eulerRaw,"213");
+            memcpy(euler,&eulerRaw[3],sizeof(double)*3);
+            rt_printf("imu_data:%f %f %f\n",euler[0],euler[1],euler[2]);
             euler[0]=0;// yaw be zero
             //euler[1]=10/180*3.1415;
             //euler[2]=0;
@@ -367,7 +381,7 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         RobotConfig config_2_b0;
         static bool isStepFinished;
         isStepFinished=g.GenerateTraj(stepCount+1,param.totalCount,param,config_2_b0);
-        if(param.count%300==0)
+        if(param.count%1000==0)
         {
             rt_printf("force data\n");
             for(int i=0;i<6;i++)
@@ -831,14 +845,15 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         if(count>totalCount)
         {
 
-            // 5cm in 3s
+            // 5cm in 2s
             double new_s=(1-cos(double(count-totalCount)/extraCount*PI))/2;
-            for(int i=0;i++;i<3)
+            for(int i=0;i<3;i++)
             {
                 swLegPee2b0[3*i]=m_NextConfig_b0.LegPee[3*swingID[i]];
                 swLegPee2b0[3*i+1]=m_NextConfig_b0.LegPee[3*swingID[i]+1]-new_s*0.05;//y direction enlong
                 swLegPee2b0[3*i+2]=m_NextConfig_b0.LegPee[3*swingID[i]+2];
             }
+
             config_2_b0.BodyPee[0]=TM_b1_2_b0[3];
             config_2_b0.BodyPee[1]=TM_b1_2_b0[7];
             config_2_b0.BodyPee[2]=TM_b1_2_b0[11];
@@ -1087,7 +1102,7 @@ void GaitGenerator::UpdateIMU(const double* euler)
 }
 void GaitGenerator::GetTerrainHeight2b( double *pos)
 {
-    //map 400*400*0.25 origined on the robot center
+    //map 400*400*0.01 origined on the robot center
     //suppose vision device is mounted along the -z direction
 
     double gridRaw[2];
@@ -1110,6 +1125,7 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
 }
 void GaitGenerator::GetBodyOffset(const double pitch, const double roll, double* offset)
 {
+
     // only for test
     offset[0]=0.9*roll;
     offset[1]=0.08;
