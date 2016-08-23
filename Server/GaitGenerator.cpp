@@ -9,7 +9,7 @@ using namespace std;
 namespace VersatileGait
 {
 atomic_bool isSlopeStopped(false);
-const double Leg2Force[6]={3,5,1,0,2,4};
+const int Leg2Force[6]{3,5,1,0,2,4};
 
 const double stdLegPee2B[18]=
 {  -0.3,-0.85,-0.55,
@@ -367,21 +367,21 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         RobotConfig config_2_b0;
         static bool isStepFinished;
         isStepFinished=g.GenerateTraj(stepCount+1,param.totalCount,param,config_2_b0);
-//        if(param.count%300==0)
-//        {
-//            rt_printf("force data\n");
-//            for(int i=0;i<6;i++)
-//            {
-//               // cout<<param.force_data->at(Leg2Force[i]).Fz<<endl;
+        if(param.count%300==0)
+        {
+            rt_printf("force data\n");
+            for(int i=0;i<6;i++)
+            {
+                rt_printf("force data %f\n",param.force_data->at(Leg2Force[i]).Fz);
 
-//            }
+            }
 
 //            //              cout<<"(stepCount)/totalCount"<<double((stepCount))/param.totalCount<<endl;
 //            //              cout<<"body"<<config_2_b0.BodyPee[0]<<" "<<config_2_b0.BodyPee[1]<<" "<<config_2_b0.BodyPee[2]<<" "<<config_2_b0.BodyPee[3]<<" "<<config_2_b0.BodyPee[4]<<" "<<config_2_b0.BodyPee[5]<<endl;
 //            //              cout<<"legPee2b0"<<endl;
 //            //              g.Display(config_2_b0.LegPee,18);
 
-//        }
+        }
 
         robot.SetPee(config_2_b0.LegPee,beginMak);
         robot.SetPeb(config_2_b0.BodyPee,beginMak,"213");
@@ -828,7 +828,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         double force[6];
         // enlong the swing leg for touching down
         double extraCount=2000;
-        if(s>1)
+        if(count>totalCount)
         {
 
             // 5cm in 3s
@@ -848,7 +848,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         //force judgement
         for(int i=0;i<6;i++)
         {
-           //force[i]=param.force_data->at(Leg2Force[i]).Fz;
+           force[i]=param.force_data->at(Leg2Force[i]).Fz;
         }
 
         for (int i=0;i<6;i++)
