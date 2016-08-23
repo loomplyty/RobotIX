@@ -39,9 +39,21 @@ enum GaitCommand
     NoCommand=0,
     //    Go=1,
     Stop=2,
+};
+
+enum GaitForceState
+{
+    Init=0,
+    TouchDown=1,
+    Stance=2,
+   // LiftOff=3,
+    Swing=4,
 
 };
 void parseAdjustSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseForce(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseForceZeroing(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+int ForceZeroing(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
 
 void parseGoSlopeVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseGoSlopeHuman(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
@@ -63,8 +75,7 @@ struct WalkGaitParams :public aris::server::GaitParamBase
     double a{ 0 };
     double b{ 0 };
     int m{GaitMode::Single};
-};
-
+ };
 
 
 class GaitGenerator
@@ -80,7 +91,9 @@ public:
     void GaitDetermineNextConfigByVision();
     void GaitDetermineNextConfigByHuman(const double terrainPitch,const double terrainRoll);
 
-    void GenerateTraj(const int count,const int totalCount,RobotConfig& config_2_b0);
+    bool GenerateTraj(const int count,const int totalCount,WalkGaitParams param,RobotConfig& config_2_b0);
+    void isForceInTransition(double * force,bool* judge);
+
 
     // elevationMap w.r.t. the current body config
     double m_TerrainMap[10][10];

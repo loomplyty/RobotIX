@@ -552,6 +552,12 @@
                     <stop abbreviation="s"/>
                   </adj_param>
             </adj>
+            <frc default="force_param">
+                <force_param type="unique">
+                    <open abbreviation="o"/>
+                    <closed abbreviation="c"/>
+                  </force_param>
+            </frc>
             <gsh default="wks_param">
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
@@ -564,6 +570,7 @@
                 </wks_param>
             </gsh>
             <ro/>
+            <zo/>
         </Commands>
     </Server>
      <Controller>

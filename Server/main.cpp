@@ -677,6 +677,7 @@ int main(int argc, char *argv[])
     //slope walking
     rs.addCmd("gsv",VersatileGait::parseGoSlopeVision,VersatileGait::GoSlopeByVision);
     rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVision);
+    rs.addCmd("frc",VersatileGait::parseForce,VersatileGait::GoSlopeByVision);
     rs.addCmd("gsh",VersatileGait::parseGoSlopeHuman,VersatileGait::GoSlopeByHuman);
 
     Rofo::RofoWalkInit();
