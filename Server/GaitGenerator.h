@@ -84,7 +84,7 @@ public:
     GaitGenerator();
     //    ~GaitGenerator();
 
-    void UpdateIMU(const double* euler);
+    void UpdateIMU( double* euler);
     void SetWalkParams(const WalkGaitParams param,const double dDist,const double dAngle);
     void UpdateRobotConfig(const double* legPee2b);
 
