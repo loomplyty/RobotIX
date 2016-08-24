@@ -8,7 +8,12 @@ using namespace std;
 
 namespace VersatileGait
 {
-atomic_bool isSlopeStopped(false);
+//atomic_bool isSlopeStopped(false);
+
+
+aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe(true);
+bool isScanningFinished{false};
+float gridMap[400][400]{0};
 const int Leg2Force[6]{3,5,1,0,2,4};
 
 const double stdLegPee2B[18]=
@@ -19,6 +24,7 @@ const double stdLegPee2B[18]=
    0.45,-0.85,0,
    0.3,-0.85,0.55
 };//change 0.85 to std offset height
+
 static GaitGenerator g;
 static int gaitState=GaitState::None;
 static int gaitCommand=GaitCommand::NoCommand;
@@ -234,22 +240,47 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
         gaitState=GaitState::Scanning;
         return 1;
     case GaitState::Scanning:
-        static bool isScanningFinished=false;
-        rt_printf("scanning...\n");
-        rt_printf("scanning...\n");
-        rt_printf("scanning...\n");
-
-        //send command and m_nextConfig_2_b0 to vision and get map
-        //receive map and copy it to map
-        //then walk
-        if(gaitCommand==GaitCommand::Stop)
+        static int scanCount=0;
+        scanCount+=1;
+        if(scanCount==1)
         {
-            rt_printf("get ending command\n");
-            gaitState=GaitState::End;
-            gaitCommand=GaitCommand::NoCommand;
+            rt_printf("scanning...\n");
+            //send command and m_nextConfig_2_b0 to vision and get map
+            //receive map and copy it to map
+            //then walk
+            ScanningInfo sendInfo;
+            sendInfo.isInit=(stepNumFinished==0);
+            aris::dynamic::s_pe2pm(g.m_NextConfig_b0.BodyPee,sendInfo.TM,"213");
+            cout<<"Transformation Matrix sent from gait!"<<endl;
+            for(int i=0;i<4;i++)
+            {
+                rt_printf("%f %f %f %f\n",sendInfo.TM[i*4],sendInfo.TM[i*4+1],sendInfo.TM[i*4+2],sendInfo.TM[i*4+3]);
+            }
+
+            rt_printf("isInit %d\n",sendInfo.isInit);
+
+            int a=VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
+            rt_printf("Matrix sent! size %d\n",a);
         }
-        else
-            gaitState=GaitState::Walking;
+
+
+        if(isScanningFinished==true)
+        {
+            if(gaitCommand==GaitCommand::Stop)
+            {
+                rt_printf("get ending command\n");
+                gaitState=GaitState::End;
+                gaitCommand=GaitCommand::NoCommand;
+            }
+            else
+            {
+                rt_printf("scanning finished, start walking\n");
+                gaitState=GaitState::Walking;
+                isScanningFinished=false;
+                scanCount=0;
+            }
+
+        }
         return 1;
 
     case GaitState::Walking:
@@ -260,7 +291,7 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
 
             //param.imu_data->toEulBody2Ground(euler,"213");
 
-            rt_printf("imu_data:%f %f %f \n",euler[0],euler[1],euler[2]);
+            rt_printf("imu_data:%f %f %f corrected %f\n",euler[0],euler[1],euler[2],asin(sin(euler[2])));
 
 
             euler[0]=0;// yaw be zero
@@ -302,7 +333,6 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
 
         if (isStepFinished==true)
         {
-            rt_printf("stepcount==totalcount\n");
             stepNumFinished+=1;
             stepCount=0;
 
@@ -324,10 +354,13 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
         dAngle=0;
         gaitState=GaitState::None;
         isStepFinished=false;
+        stepCount=0;
+        memset(g.m_NextConfig_b0.BodyPee,0,sizeof(double)*6);
+        rt_printf("step end\n");
         return 0;
-    default:
-        gaitState=GaitState::None;
-        return 0;
+        //    default:
+        //        gaitState=GaitState::None;
+        //        return 0;
     }
 }
 
@@ -424,8 +457,8 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
 
 GaitGenerator::GaitGenerator()
 {
-
 }
+
 
 void GaitGenerator::GaitDetermineNextConfigByVision()
 {
@@ -864,11 +897,11 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         for(int i=0;i<6;i++)
         {
             force[i]=param.force_data->at(Leg2Force[i]).Fz;
-        }
+         }
 
         for (int i=0;i<6;i++)
         {
-//            if(force[i]<-50&&force[i]>-200)
+            //            if(force[i]<-50&&force[i]>-200)
             if(force[i]<-80)
                 isInTrans[i]=true;
             else
@@ -1117,7 +1150,9 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
 
     double gridRaw[2];
     gridRaw[0]=pos[0]/this->m_mapReso+200;
-    gridRaw[1]=-pos[2]/this->m_mapReso;
+    gridRaw[1]=-pos[2]/this->m_mapReso+200;
+
+
     int grid[2];
     if(ceil(gridRaw[0])/2+floor(gridRaw[0])/2>gridRaw[0])
         grid[0]=floor(gridRaw[0]);
@@ -1129,10 +1164,76 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     else
         grid[1]=ceil(gridRaw[1]);
 
-    pos[1]=gridMap[grid[0]][grid[1]];
-    // for test
-    pos[1]=-0.85;
+
+
+    // find the elevation with least variance
+    double elevation[9];
+        elevation[0]=gridMap[grid[0]-1][grid[1]-1];
+        elevation[1]=gridMap[grid[0]][grid[1]-1];
+        elevation[2]=gridMap[grid[0]+1][grid[1]-1];
+        elevation[3]=gridMap[grid[0]-1][grid[1]];
+        elevation[4]=gridMap[grid[0]][grid[1]];
+        elevation[5]=gridMap[grid[0]+1][grid[1]];
+        elevation[6]=gridMap[grid[0]-1][grid[1]+1];
+        elevation[7]=gridMap[grid[0]][grid[1]+1];
+        elevation[8]=gridMap[grid[0]+1][grid[1]+1];
+
+    double variance[9];
+    double mean[9];
+    double points[8];
+    for(int i=0;i<9;i++)
+    {
+        for (int j=0;j<8;j++)
+            points[j]=elevation[(j+1)%9];
+        variance[i]=Variance(points,8);
+        mean[i]=Mean(points,8);
+    }
+    double v=100;
+    for(int i=0;i<9;i++)
+    {
+        if(variance[i]<v)
+        {
+            v=variance[i];
+            pos[1]=mean[i];
+        }
+    }
+
+
+    pos[1]+=0.046;
+
+    rt_printf("From planner: terrain height for swing leg from vision %f\n",pos[1]);
+
+    if(pos[1]>-0.6||pos[1]<-1)
+    {
+        rt_printf("impossible terrain height!\n");
+        pos[1]=-0.85;
+
+    }
 }
+double GaitGenerator::Mean(double *points,int N)
+{
+    double sum=0;
+    for(int i=0;i<N;i++)
+    {
+        sum+=points[i];
+    }
+    double m=sum/N;
+    return m;
+}
+
+double GaitGenerator::Variance(double *points,int N)
+{
+    double v=0;
+    double m=Mean(points,N);
+    for(int i=0;i<N;i++)
+    {
+        v+=(points[i]-m)*(points[i]-m);
+    }
+    v=v/N;
+    return v;
+}
+
+
 void GaitGenerator::GetBodyOffset(const double pitch, const double roll, double* offset)
 {
 

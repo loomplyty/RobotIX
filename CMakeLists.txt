@@ -25,7 +25,7 @@ FUNCTION(PREPEND_H var prefix)
    SET(${var} "${listVar}" PARENT_SCOPE)
 ENDFUNCTION(PREPEND_H)
 
-project(Kinect2Calibration)
+project(RobotVIII)
 
 find_package(PCL 1.8 REQUIRED)
 add_definitions(${PCL_DEFINITIONS})

@@ -13,9 +13,17 @@
 namespace VersatileGait
 {
 
-extern double gridMap[400][400];
+struct ScanningInfo
+{
+    bool isInit;
+    double TM[16];
+};
 
-enum GaitType
+extern float gridMap[400][400];
+extern bool isScanningFinished;
+extern aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe;
+
+ enum GaitType
 {
     Flat=0,
     Obstacle=1,
@@ -106,6 +114,7 @@ public:
     RobotConfig m_CurrentConfig_g;
     RobotConfig m_NextConfig_b1;
     RobotConfig m_NextConfig_b0;
+
     //  int m_GaitType;
     int swingID[3]{0,2,4};
     int stanceID[3]{1,5,3};
@@ -134,47 +143,11 @@ public:
     void TM_2_Rot(const double* TM, double& theta, double* u);
     void Display(const double *vec,int length);
     void TrajEllipsoid(const double *p0,const double* p1,const int count,const int totalCount,double* legpos);
-
+    double Variance(double*points,int N);
+    double Mean(double*points, int N);
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif // GAITGENERATOR_H

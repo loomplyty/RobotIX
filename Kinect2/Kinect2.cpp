@@ -276,6 +276,9 @@ void KINECT2::UpdateConMap()
 
     Eigen::Matrix4f invPosMatrix = posMatrix.inverse();
 
+    cout<< posMatrix <<endl;
+    cout<< invPosMatrix <<endl;
+
     //    CloudPtr mLastPointCloud;
     //    pcl::transformPointCloud(*mKinect2Struct->lastPointCloud, *mLastPointCloud, invPosMatrix);
 
