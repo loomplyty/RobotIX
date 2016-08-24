@@ -55,7 +55,7 @@ void GenPointCoud(const CloudPtr &rawCloud, CloudPtr &adjCloud)
             0, 0, 0, 1;
 
     Eigen::Matrix4f matrixRTG;
-    matrixRTG <<  1, 0, 0, 0,
+    matrixRTG <<  -1, 0, 0, 0,
             0, 1, 0, 0,
             0, 0, 1, 0,
             0, 0, 0, 1;
@@ -304,14 +304,14 @@ void KINECT2::UpdateConMap()
         {
             if(mKinect2Struct->lastGridMap[i][j] != 0)
             {
-                for(int p = 0; p <= 10; p++)
+                for(int p = 1; p <= 3; p++)
                 {
-                    for(int q = 0; q <= 10; q++)
+                    for(int q = 1; q <= 3; q++)
                     {
                         float tempPoint[3];
-                        tempPoint[0] = 0.01 * (j - 200) + 0.001 * q;
+                        tempPoint[0] = 0.01 * (j - 200) + 0.003 * q;
                         tempPoint[1] = mKinect2Struct->lastGridMap[i][j];
-                        tempPoint[2] = 0.01 * (i - 200) + 0.001 * p;
+                        tempPoint[2] = 0.01 * (i - 200) + 0.003 * p;
 
                         float tempTransPoint[3];
                         tempTransPoint[0] = invPosMatrix(0, 0) * tempPoint[0] + invPosMatrix(0, 1) * tempPoint[1] + invPosMatrix(0, 2) * tempPoint[2] + invPosMatrix(0, 3);

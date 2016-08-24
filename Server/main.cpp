@@ -21,7 +21,7 @@ using namespace std;
 
 
 //tianyuan
- #include"GaitGenerator.h"
+#include"GaitGenerator.h"
 
 using namespace aris::core;
 
@@ -33,7 +33,7 @@ double feetPosi[18] =
   0.45, -0.9,  0,
   0.3,   -0.9,  0.65 };
 
-Kinect2Sensor::KINECT2 kinect2;
+//Kinect2Sensor::KINECT2 kinect2;
 
 
 //atomic_bool isTerrainCaliRecorded(false);
@@ -445,48 +445,49 @@ Kinect2Sensor::KINECT2 kinect2;
 
 static auto visionSlopeThread = std::thread([]()
 {
-   cout<<"vision thread begins!"<<endl;
-   while(true)
-   {
-       VersatileGait::ScanningInfo info;
-       cout<<"matrix before received!"<<endl;
+    sleep(1);
+    cout << "Sleep for a second waiting for something to init\n";
+
+    while(true)
+    {
+        VersatileGait::ScanningInfo info;
 
         VersatileGait::visionSlopePipe.recvInNrt(info);
         cout<<"matrix received!"<<endl;
 
-       if(info.isInit == true)
-       {
-     //      kinect2.InitMap();
-       //    kinect2.SaveMap();
-           //memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
-           cout<<"map Init"<<endl;
-       }
-       else
-       {
-           float TM_float[16];
-           for(int i=1;i<16;i++)
-               TM_float[i]=float(info.TM[i]);
-        //   kinect2.GetPose(TM_float);
-           cout<<"Transformation Matrix got in Vision!"<<endl;
-           for(int i=0;i<4;i++)
-           {
-               cout<<TM_float[i*4]<<" "<<TM_float[i*4+1]<<" "<<TM_float[i*4+2]<<" "<<TM_float[i*4+3]<<" "<<endl;
-           }
-        //   kinect2.UpdateConMap();
-        //   kinect2.SaveMap();
-         //  memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
-           cout<<"map update"<<endl;
-       }
+        if(info.isInit == true)
+        {
+            //  kinect2.InitMap();
+            //   kinect2.SaveMap();
+            //   memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+            cout<<"map Init"<<endl;
+        }
+        else
+        {
+            float TM_float[16];
+            for(int i=0;i<16;i++)
+                TM_float[i]=float(info.TM[i]);
+            //  kinect2.GetPose(TM_float);
+            cout<<"Transformation Matrix got in Vision!"<<endl;
+            for(int i=0;i<4;i++)
+            {
+                cout<<TM_float[i*4]<<" "<<TM_float[i*4+1]<<" "<<TM_float[i*4+2]<<" "<<TM_float[i*4+3]<<" "<<endl;
+            }
+            //   kinect2.UpdateConMap();
+            //  kinect2.SaveMap();
+            //  memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+            cout<<"map update"<<endl;
+        }
 
-       cout<<" map recorded"<<endl;
-       VersatileGait::isScanningFinished = true;
-   }
+        cout<<" map recorded"<<endl;
+        VersatileGait::isScanningFinished = true;
+    }
 });
 
 
 int main(int argc, char *argv[])
 {
-   // kinect2.Start();
+    // kinect2.Start();
 
     std::string xml_address;
 
@@ -521,9 +522,9 @@ int main(int argc, char *argv[])
     rs.addCmd("rc", Robots::recoverParse, Robots::recoverGait);
     rs.addCmd("wk", Robots::walkParse, Robots::walkGait);
     rs.addCmd("ro", Robots::resetOriginParse, Robots::resetOriginGait);
-//    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
-//    rs.addCmd("vwk", visionWalkParse, visionWalk);
-//    rs.addCmd("swk", stopVisionWalkParse, visionWalk);
+    //    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
+    //    rs.addCmd("vwk", visionWalkParse, visionWalk);
+    //    rs.addCmd("swk", stopVisionWalkParse, visionWalk);
 
     //slope walking
     rs.addCmd("gsv",VersatileGait::parseGoSlopeVision,VersatileGait::GoSlopeByVision);

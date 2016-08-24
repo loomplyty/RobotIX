@@ -12,8 +12,8 @@ namespace VersatileGait
 
 
 aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe(true);
-bool isScanningFinished{false};
-float gridMap[400][400]{0};
+atomic_bool isScanningFinished{false};
+float gridMap[400][400];
 const int Leg2Force[6]{3,5,1,0,2,4};
 
 const double stdLegPee2B[18]=
@@ -251,7 +251,7 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
             ScanningInfo sendInfo;
             sendInfo.isInit=(stepNumFinished==0);
             aris::dynamic::s_pe2pm(g.m_NextConfig_b0.BodyPee,sendInfo.TM,"213");
-            cout<<"Transformation Matrix sent from gait!"<<endl;
+            rt_printf("Transformation Matrix sent from gait!\n");
             for(int i=0;i<4;i++)
             {
                 rt_printf("%f %f %f %f\n",sendInfo.TM[i*4],sendInfo.TM[i*4+1],sendInfo.TM[i*4+2],sendInfo.TM[i*4+3]);
@@ -288,16 +288,13 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
         {
             rt_printf("a new step begins...\n");
             double euler[3];
-
             //param.imu_data->toEulBody2Ground(euler,"213");
 
             rt_printf("imu_data:%f %f %f corrected %f\n",euler[0],euler[1],euler[2],asin(sin(euler[2])));
 
+            euler[0]=0;// yaw being zero
+          //  euler[2]=asin(sin(euler[2]));
 
-            euler[0]=0;// yaw be zero
-            euler[2]=asin(sin(euler[2]));
-
-            g.UpdateIMU(euler);
 
             g.SetWalkParams(param,dDist,dAngle);
             //rt_printf("dDist %f, dAngle %f\n",dDist,dAngle);
@@ -309,9 +306,9 @@ int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamB
             beginMak.update();
 
 
-            g.UpdateRobotConfig(currentLegPee2b);
+            g.UpdateRobotConfig(currentLegPee2b,euler[1],euler[2]);
             g.GaitDetermineNextConfigByVision();
-        }
+         }
         RobotConfig config_2_b0;
         static bool isStepFinished;
         isStepFinished=g.GenerateTraj(stepCount+1,param.totalCount,param,config_2_b0);
@@ -385,13 +382,12 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             rt_printf("a new step begins...\n");
             double euler[3];
 
-            //param.imu_data->toEulBody2Ground(euler,"213");
+             param.imu_data->toEulBody2Ground(euler,"213");
 
             rt_printf("imu_data:%f %f %f \n",euler[0],euler[1],euler[2]);
             euler[0]=0;// yaw be zero
-            euler[2]=asin(sin(euler[2]));
+            //euler[2]=asin(sin(euler[2]));
 
-            g.UpdateIMU(euler);
 
             g.SetWalkParams(param,0,0);
             double currentLegPee2b[18];
@@ -401,7 +397,7 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
             beginMak.setPrtPm(*robot.body().pm());
             beginMak.update();
 
-            g.UpdateRobotConfig(currentLegPee2b);
+            g.UpdateRobotConfig(currentLegPee2b,euler[1],euler[2]);
             g.GaitDetermineNextConfigByHuman(pitch_2_b0,roll_2_b0);
         }
         RobotConfig config_2_b0;
@@ -409,19 +405,18 @@ int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBa
         isStepFinished=g.GenerateTraj(stepCount+1,param.totalCount,param,config_2_b0);
         if(param.count%10==0)
         {
-            double euler[3];
 
             // param.imu_data->toEulBody2Ground(euler,"213");
 
             //  rt_printf("imu_data:%f %f %f %f\n",euler[0],euler[1],euler[2],asin(sin(euler[2])));
 
 
-            rt_printf("force data\n");
-            for(int i=0;i<6;i++)
-            {
-                rt_printf("force data %f\n",param.force_data->at(Leg2Force[i]).Fz);
+//            rt_printf("force data\n");
+//            for(int i=0;i<6;i++)
+//            {
+//                rt_printf("force data %f\n",param.force_data->at(Leg2Force[i]).Fz);
 
-            }
+//            }
 
             //            //              cout<<"(stepCount)/totalCount"<<double((stepCount))/param.totalCount<<endl;
             //            //              cout<<"body"<<config_2_b0.BodyPee[0]<<" "<<config_2_b0.BodyPee[1]<<" "<<config_2_b0.BodyPee[2]<<" "<<config_2_b0.BodyPee[3]<<" "<<config_2_b0.BodyPee[4]<<" "<<config_2_b0.BodyPee[5]<<endl;
@@ -485,9 +480,9 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
         Displacement[2]=-dstraight*cos(m_Params.a);
         Trans(Displacement,est_TM_b1_2_b0);
     }
-    //    cout<<"dstraight"<<dstraight<<endl;
-    //    cout<<"est body tm"<<endl;
-    //    Display(est_TM_b1_2_b0,16);
+//        cout<<"dstraight"<<dstraight<<endl;
+//        cout<<"est body tm"<<endl;
+//        Display(est_TM_b1_2_b0,16);
 
     //2. Find  footholds
     double TM_b0_2_g[16];
@@ -499,8 +494,8 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     double est_BodyOffset[3];
     GetBodyOffset(estBody_2_g[4],estBody_2_g[5],est_BodyOffset);
 
-    //    cout<<"est pitch"<<estBody_2_g[4]<<endl;
-    //    cout<<"est roll"<<estBody_2_g[5]<<endl;
+//       cout<<"est pitch"<<estBody_2_g[4]<<endl;
+//        cout<<"est roll"<<estBody_2_g[5]<<endl;
 
     //estimate  footholds w.r.t. b0
     double estSWFoothold_2_b0[9];
@@ -520,9 +515,9 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     GetTerrainHeight2b(&SWFoothold_2_b0[0]);
     GetTerrainHeight2b(&SWFoothold_2_b0[3]);
     GetTerrainHeight2b(&SWFoothold_2_b0[6]);
-    // cout<<"swingID"<<swingID[0]<<swingID[1]<<swingID[2]<<endl;
-    //  cout<<"swing foothold ........."<<endl;
-    //  Display(SWFoothold_2_b0,9);
+//     cout<<"swingID"<<swingID[0]<<swingID[1]<<swingID[2]<<endl;
+//      cout<<"swing foothold ........."<<endl;
+//      Display(SWFoothold_2_b0,9);
 
     //3.  determine bodypos w.r.t. b0
     double x1_2_b0[3];
@@ -613,19 +608,19 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     //           Display(BodyPos_2_b1_spCenter,3);
     //           cout<<"BodyPos_2_b0_spCenter"<<endl;
     //          Display(BodyPos_2_b0_spCenter,3);
-    cout<<"Body_2_b0"<<endl;
-    Display(Body_2_b0,3);
+//    cout<<"Body_2_b0"<<endl;
+//   Display(Body_2_b0,3);
 
-    //        cout<<"TMB1_2_B0"<<endl;
-    //        Display(TM_b1_2_b0,16);
-    //        cout<<"TMB0_2_B1"<<endl;
-    //        Display(TM_b0_2_b1,16);
-    //        cout<<"currentlegPee2B0"<<endl;
-    //        Display(m_CurrentConfig_b0.LegPee,18);
-    //        cout<<"legPee2B0"<<endl;
-    //        Display(m_NextConfig_b0.LegPee,18);
-    //        cout<<"legPee2B1"<<endl;
-    //        Display(m_NextConfig_b1.LegPee,18);
+////            cout<<"TMB1_2_B0"<<endl;
+////            Display(TM_b1_2_b0,16);
+////            cout<<"TMB0_2_B1"<<endl;
+////            Display(TM_b0_2_b1,16);
+//            cout<<"currentlegPee2B0"<<endl;
+//            Display(m_CurrentConfig_b0.LegPee,18);
+//            cout<<"legPee2B0"<<endl;
+//            Display(m_NextConfig_b0.LegPee,18);
+//            cout<<"legPee2B1"<<endl;
+//            Display(m_NextConfig_b1.LegPee,18);
 
 }
 
@@ -756,8 +751,8 @@ void GaitGenerator::GaitDetermineNextConfigByHuman(const double Pitch_2_b0, cons
     //    //              Display(BodyPos_2_b1_spCenter,3);
     //    //              cout<<"BodyPos_2_b0_spCenter"<<endl;
     //    //             Display(BodyPos_2_b0_spCenter,3);
-    cout<<"Body_2_b0"<<endl;
-    Display(Body_2_b0,3);
+   // cout<<"Body_2_b0"<<endl;
+   // Display(Body_2_b0,3);
 
     //    cout<<"TMB1_2_B0"<<endl;
     //    Display(TM_b1_2_b0,16);
@@ -773,15 +768,17 @@ void GaitGenerator::GaitDetermineNextConfigByHuman(const double Pitch_2_b0, cons
     //    Display(m_NextConfig_b1.LegPee,18);
 }
 
-void GaitGenerator::UpdateRobotConfig(const double *legPee2b)//legPee2b is got the Robot model
+void GaitGenerator::UpdateRobotConfig(const double *legPee2b,const double pitch, const double roll)//legPee2b is got the Robot model
 {
     // Initially, ground CS is set on the body Geometric center
     memset(m_CurrentConfig_b0.BodyPee,0,sizeof(double)*6);
     memcpy(m_CurrentConfig_b0.LegPee,legPee2b,sizeof(double)*18);
 
-    memset(&m_CurrentConfig_g.BodyPee[0],0,sizeof(double)*3);
-    memcpy(&m_CurrentConfig_g.BodyPee[3],m_EulerAngles,sizeof(double)*3);
-    m_CurrentConfig_g.BodyPee[3]=0;
+    memset(m_CurrentConfig_g.BodyPee,0,sizeof(double)*6);
+     m_CurrentConfig_g.BodyPee[3]=0;
+     m_CurrentConfig_g.BodyPee[4]=pitch;
+     m_CurrentConfig_g.BodyPee[5]=roll;
+
 
     double TM_b0_2_g[16];
     aris::dynamic::s_pe2pm(m_CurrentConfig_g.BodyPee,TM_b0_2_g,"213");
@@ -1139,18 +1136,15 @@ void GaitGenerator::SetWalkParams(const WalkGaitParams param,const double dDist,
 }
 
 
-void GaitGenerator::UpdateIMU( double* euler)
-{
-    memcpy(m_EulerAngles,euler,sizeof(double)*3);
-}
+
 void GaitGenerator::GetTerrainHeight2b( double *pos)
 {
     //map 400*400*0.01 origined on the robot center
     //suppose vision device is mounted along the -z direction
 
     double gridRaw[2];
-    gridRaw[0]=pos[0]/this->m_mapReso+200;
-    gridRaw[1]=-pos[2]/this->m_mapReso+200;
+    gridRaw[0]=pos[0]/0.01+200;
+    gridRaw[1]=pos[2]/0.01+200;
 
 
     int grid[2];
@@ -1199,6 +1193,11 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     }
 
 
+
+//    if(grid[0]>0&&grid[0]<400&&grid[1]>0&&grid[1]<400)
+//        pos[1]=gridMap[grid[0]][grid[1]];
+//    else
+//        pos[1]=-0.85;
     pos[1]+=0.046;
 
     rt_printf("From planner: terrain height for swing leg from vision %f\n",pos[1]);
@@ -1206,10 +1205,10 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     if(pos[1]>-0.6||pos[1]<-1)
     {
         rt_printf("impossible terrain height!\n");
-        pos[1]=-0.85;
+        pos[1]=-0.9;
 
     }
-}
+ }
 double GaitGenerator::Mean(double *points,int N)
 {
     double sum=0;
@@ -1237,8 +1236,9 @@ double GaitGenerator::Variance(double *points,int N)
 void GaitGenerator::GetBodyOffset(const double pitch, const double roll, double* offset)
 {
 
+    double Roll=asin(sin(roll));
     // only for test
-    offset[0]=0.9*roll;
+    offset[0]=0.9*Roll;
     offset[1]=0.08;
     offset[2]=-0.8*pitch;
 }

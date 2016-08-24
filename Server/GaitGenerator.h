@@ -20,7 +20,7 @@ struct ScanningInfo
 };
 
 extern float gridMap[400][400];
-extern bool isScanningFinished;
+extern atomic_bool isScanningFinished;
 extern aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe;
 
  enum GaitType
@@ -92,9 +92,8 @@ public:
     GaitGenerator();
     //    ~GaitGenerator();
 
-    void UpdateIMU( double* euler);
-    void SetWalkParams(const WalkGaitParams param,const double dDist,const double dAngle);
-    void UpdateRobotConfig(const double* legPee2b);
+     void SetWalkParams(const WalkGaitParams param,const double dDist,const double dAngle);
+    void UpdateRobotConfig(const double* legPee2b,const double pitch,const double roll);
 
     void GaitDetermineNextConfigByVision();
     void GaitDetermineNextConfigByHuman(const double terrainPitch,const double terrainRoll);
@@ -104,10 +103,10 @@ public:
 
 
     // elevationMap w.r.t. the current body config
-    double m_TerrainMap[10][10];
-    double m_EulerAngles[3];
+    //double m_TerrainMap[10][10];
+    //double m_EulerAngles[3]{0};
     //double m_ForceData[6][6];
-    const double m_mapReso{0.01};
+    //const double m_mapReso{0.01};
 
     WalkGaitParams m_Params;
     RobotConfig m_CurrentConfig_b0;
