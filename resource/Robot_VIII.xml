@@ -543,6 +543,13 @@
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>
             </gsv>
+            <gsf default="wks_param">
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="-0.1"/>
+                    <height abbreviation="h" type="double" default="0.08"/>
+                    </wks_param>
+            </gsf>
             <adj default="adj_param">
                 <adj_param type="unique">
                     <forward abbreviation="f"/>
@@ -558,6 +565,12 @@
                     <closed abbreviation="c"/>
                   </force_param>
             </frc>
+            <imu default="imu_param">
+                <imu_param type="unique">
+                    <open abbreviation="o"/>
+                    <closed abbreviation="c"/>
+                  </imu_param>
+            </imu>
             <vwk/>
             <swk/>
             <ca/>
@@ -650,7 +663,7 @@
 		</EK1122>
             </SlaveType>
             <Slave>
-                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1" kp="120"/>
+                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1"/>
                 <Motion2 type="ElmoSoloWhistle"  min_pos="0.0669" max_pos="10.080" max_vel="0.9481" home_pos="0.669" input2count="9216000" abs_id="0"/>
                 <Motion3 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 2"/>
                 <Motion4 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 5"/>
