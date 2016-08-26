@@ -457,9 +457,9 @@ static auto visionSlopeThread = std::thread([]()
 
         if(info.isInit == true)
         {
-            //   kinect2.InitMap();
-            //   kinect2.SaveMap();
-            //   memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+            kinect2.InitMap();
+            kinect2.SaveMap();
+            memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
             cout<<"map Init"<<endl;
         }
         else
@@ -467,15 +467,15 @@ static auto visionSlopeThread = std::thread([]()
             float TM_float[16];
             for(int i=0;i<16;i++)
                 TM_float[i]=float(info.TM[i]);
-            //  kinect2.GetPose(TM_float);
+            kinect2.GetPose(TM_float);
             cout<<"Transformation Matrix got in Vision!"<<endl;
             for(int i=0;i<4;i++)
             {
                 cout<<TM_float[i*4]<<" "<<TM_float[i*4+1]<<" "<<TM_float[i*4+2]<<" "<<TM_float[i*4+3]<<" "<<endl;
             }
-             //  kinect2.UpdateConMap();
-            //  kinect2.SaveMap();
-            //  memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+            kinect2.UpdateConMap();
+            kinect2.SaveMap();
+            memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
             cout<<"map update"<<endl;
         }
 
@@ -487,7 +487,7 @@ static auto visionSlopeThread = std::thread([]()
 
 int main(int argc, char *argv[])
 {
- // kinect2.Start();
+      kinect2.Start();
 
     std::string xml_address;
 
@@ -531,6 +531,7 @@ int main(int argc, char *argv[])
     rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVision);
     rs.addCmd("frc",VersatileGait::parseForce,VersatileGait::GoSlopeByVision);
     rs.addCmd("imu",VersatileGait::parseIMU,VersatileGait::GoSlopeByVision);
+    rs.addCmd("vis",VersatileGait::parseVision,VersatileGait::GoSlopeByVision2);
 
     rs.addCmd("gsh",VersatileGait::parseGoSlopeHuman,VersatileGait::GoSlopeByHuman);
 

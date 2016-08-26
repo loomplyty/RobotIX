@@ -548,7 +548,7 @@
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
                     <distance abbreviation="d" type="double" default="-0.1"/>
-                    <height abbreviation="h" type="double" default="0.08"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>
                     <mode abbreviation="m" type="int" default="1"/>
@@ -582,6 +582,12 @@
                     <closed abbreviation="c"/>
                   </imu_param>
             </imu>
+            <vis default="vis_param">
+                <vis_param type="unique">
+                    <open abbreviation="o"/>
+                    <closed abbreviation="c"/>
+                  </vis_param>
+            </vis>
             <vwk/>
             <swk/>
             <ca/>
