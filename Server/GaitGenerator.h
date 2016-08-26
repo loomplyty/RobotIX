@@ -115,6 +115,8 @@ public:
 
     void slopeGetNextConfig(aris::dynamic::Model &model,const double IMUpitch,const double IMUroll);
     void GetLeg2bodyFromLegs( double* Legs,double *TM);
+    void GetTri2bodyFromTri( double* Tris,double *TM);
+
 //    bool GenerateTrajSlope(const int count,const int totalCount,WalkGaitParams param,RobotConfig& config_2_b0);
 
 
