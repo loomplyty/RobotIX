@@ -14,7 +14,7 @@ namespace VersatileGait
 aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe(true);
 atomic_bool isScanningFinished{false};
 float gridMap[400][400];
-const int Leg2Force[6]{3,5,1,0,2,4};
+const int Leg2Force[6]{0,1,2,3,4,5};
 
 const double stdLegPee2B[18]=
 {  -0.3,-0.85,-0.55,
@@ -25,6 +25,14 @@ const double stdLegPee2B[18]=
    0.3,-0.85,0.55
 };//change 0.85 to std offset height
 
+const double stdLegPee2C[18]=
+{  -0.3,0,-0.55,
+   -0.45,0,0,
+   -0.3,0,0.55,
+   0.3,0,-0.55,
+   0.45,0,0,
+   0.3,0,0.55
+};//change 0.85 to std offset height
 static int gaitState=GaitState::None;
 static int gaitCommand=GaitCommand::NoCommand;
 static double pitch_2_b0=0;
@@ -33,6 +41,675 @@ static double dDist=0;
 static double dAngle=0;
 static bool isForceUsed=false;
 static bool isIMUUsed=false;
+
+void parseGoSlopeVision2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
+{
+    WalkGaitParams param;
+    for (auto &i : params)
+    {
+        if (i.first == "totalCount")
+        {
+            param.totalCount = std::stoi(i.second);
+        }
+        else if (i.first == "distance")
+        {
+            param.d = stod(i.second);
+        }
+        else if (i.first == "height")
+        {
+            param.h = stod(i.second);
+        }
+        else if (i.first == "alpha")
+        {
+            param.a = stod(i.second);
+        }
+        else if (i.first == "beta")
+        {
+            double b=stod(i.second);
+            if (abs(b)>0&& abs(b)<0.01)
+                b=0.01;
+            param.b =b;
+        }
+        else if (i.first == "mode")
+        {
+            param.m= stoi(i.second);
+        }
+    }
+    msg.copyStruct(param);
+    cout<<"parse finished"<<endl;
+
+
+}
+
+int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)
+{
+
+    static GaitGenerator g;
+
+    auto &robot = static_cast<Robots::RobotBase &>(model);
+    auto &param=static_cast<const WalkGaitParams &>(param_in);
+    static aris::dynamic::FloatMarker beginMak{robot.ground()};
+
+    static int stepNumFinished=0;
+    static int stepCount=0;
+    static bool isStepFinished=false;
+
+    static RobotConfig Config0_2_c0;
+    static RobotConfig Config1_2_c0;
+   // static RobotConfig Config1_2_c1;
+    static RobotConfig Config1_2_b1;
+    static RobotConfig Config1_2_b0;
+
+    static double TM_c0_2_g[16];
+
+    static int swingID[3]{0,2,4};
+    static int stanceID[3]{1,5,3};
+
+
+    switch(gaitState)
+    {
+    case GaitState::None:
+        gaitState=GaitState::Scanning;
+        return 1;
+    case GaitState::Scanning:
+        static int scanCount=0;
+        scanCount+=1;
+        if(scanCount==1)
+        {
+            rt_printf("scanning...\n");
+            //send command and m_nextConfig_2_b0 to vision and get map
+            //receive map and copy it to map
+            //then walk
+            ScanningInfo sendInfo;
+            sendInfo.isInit=(stepNumFinished==0);
+            aris::dynamic::s_pe2pm(g.m_NextConfig_b0.BodyPee,sendInfo.TM,"213");
+            cout<<"bodyTM in scanning ... "<<endl;
+            g.Display(g.m_NextConfig_b0.BodyPee,6);
+
+            rt_printf("Transformation Matrix sent from gait!\n");
+            for(int i=0;i<4;i++)
+            {
+                rt_printf("%f %f %f %f\n",sendInfo.TM[i*4],sendInfo.TM[i*4+1],sendInfo.TM[i*4+2],sendInfo.TM[i*4+3]);
+            }
+
+            rt_printf("isInit %d\n",sendInfo.isInit);
+
+            int a=VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
+            rt_printf("Matrix sent! size %d\n",a);
+        }
+
+
+        if(isScanningFinished==true)
+        {
+            if(gaitCommand==GaitCommand::Stop)
+            {
+                rt_printf("get ending command\n");
+                gaitState=GaitState::End;
+                gaitCommand=GaitCommand::NoCommand;
+            }
+            else
+            {
+                rt_printf("scanning finished, start walking\n");
+                gaitState=GaitState::Walking;
+                isScanningFinished=false;
+                scanCount=0;
+            }
+
+        }
+        return 1;
+
+    case GaitState::Walking:
+        if(stepCount==0) //update vision and imu to update this configuration and compute the next configuration
+        {
+            rt_printf("a new step begins...\n");
+            double euler[3];
+            if(isIMUUsed==true)
+                param.imu_data->toEulBody2Ground(euler,"213");
+
+            rt_printf("imu_data:%f %f %f corrected %f\n",euler[0],euler[1],euler[2],asin(sin(euler[2])));
+
+            euler[0]=0;// yaw being zero
+            euler[2]=asin(sin(euler[2]));
+
+
+            RobotConfig Config0_2_b0;
+            robot.GetPee(Config0_2_b0.LegPee,robot.body());
+
+            double TM_c0_2_b0[16];
+            g.GetLeg2bodyFromLegs(Config0_2_b0.LegPee,TM_c0_2_b0);
+            memset(Config0_2_b0.BodyPee,0,sizeof(double)*6);
+            aris::dynamic::s_pm_dot_pm(*robot.body().pm(),TM_c0_2_b0,TM_c0_2_g);
+
+            beginMak.setPrtPm(TM_c0_2_g);
+            beginMak.update();
+            robot.GetPeb(Config0_2_c0.BodyPee,beginMak,"213");
+            robot.GetPee(Config0_2_c0.LegPee,beginMak);
+
+            // 2.set walking params in c0 coordinate system
+            //firstly, could get vision to TM_visTerran_2_c0
+
+            //otherwise, use only the current ground, in which c0  coicide with the ground
+
+            //first compute leg
+
+            double TM_c1_2_c0[16];
+            double TM_c0_2_c1[16];
+
+            double c1_2_c0[6];
+            c1_2_c0[0]=0;//x
+            c1_2_c0[1]=0;
+            c1_2_c0[2]=-param.d;
+            c1_2_c0[3]=0;
+            c1_2_c0[4]=0;
+            c1_2_c0[5]=0;
+            aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
+            aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
+
+            //stance legs 2 c0
+            for(int i=0;i<3;i++)
+                memcpy(&Config1_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);
+            //swing legs 2 c0
+            double SW_2_c1[9];
+            double SW_2_c0[9];
+
+            for(int i=0;i<3;i++)
+            {
+                memcpy(&SW_2_c1[i*3],&stdLegPee2C[swingID[i]*3],sizeof(double)*3);
+                SW_2_c1[i*3]=SW_2_c1[i*3];
+                SW_2_c1[i*3+1]=SW_2_c1[i*3+1];
+                SW_2_c1[i*3+2]=SW_2_c1[i*3+2]-param.d/2;
+                aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,&SW_2_c1[i*3],&SW_2_c0[i*3]);
+                memcpy(&Config1_2_c0.LegPee[swingID[i]*3],&SW_2_c0[i*3],sizeof(double)*3);
+            }
+            // body 2 c0
+            double body_2_c1[6];
+            double body_2_c0[6];
+            body_2_c1[0]=0;//+offset
+            body_2_c1[1]=-stdLegPee2B[1];//0.85+offset
+            body_2_c1[2]=0;//+offset
+            body_2_c1[3]=0;
+            body_2_c1[4]=0;
+            body_2_c1[5]=0;
+
+           // memcpy(Config1_2_c1.BodyPee,body_2_c1,sizeof(double)*6);
+           // memcpy(Config1_2_c1.LegPee,body_2_c1,sizeof(double)*6);
+
+
+            aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,body_2_c1,body_2_c0);
+            body_2_c0[3]=c1_2_c0[3];
+            body_2_c0[4]=c1_2_c0[4];
+            body_2_c0[5]=c1_2_c0[5];
+            memcpy(&Config1_2_c0.BodyPee,body_2_c0,sizeof(double)*6);
+
+            //            double TM_b1_2_c0[16];
+            //            double TM_b1_2_g[16];
+            //            aris::dynamic::s_pe2pm(body_2_c0,TM_b1_2_c0,"213");
+            //            aris::dynamic::s_pm_dot_pm(TM_c0_2_g,TM_b1_2_c0,TM_b1_2_g);
+
+            //            beginMak.setPrtPm(TM_b1_2_g);
+            //            beginMak.update();
+            //            robot.GetPeb(Config1_2_b1.BodyPee,beginMak,"213");
+            //            robot.GetPee(Config1_2_b1.LegPee,beginMak);
+
+
+            cout<<"step infomation"<<endl;
+            cout<<" Config0_2_c0, body"<<endl;
+            g.Display(Config0_2_c0.BodyPee,6);
+            cout<<" Config0_2_c0, leg"<<endl;
+            g.Display(Config0_2_c0.LegPee,18);
+
+            cout<<" Config1_2_c0, body"<<endl;
+            g.Display(Config1_2_c0.BodyPee,6);
+            cout<<" Config1_2_c0, leg"<<endl;
+            g.Display(Config1_2_c0.LegPee,18);
+
+//            cout<<" Config0_2_c0, body"<<endl;
+//            g.Display(Config0_2_c0.BodyPee,6);
+//            cout<<" Config0_2_c0, leg"<<endl;
+//            g.Display(Config0_2_c0.BodyPee,6);
+
+        }
+
+        //generate trajectory for each ms
+        RobotConfig config_2_c0;
+
+        double s;
+        s=(1-cos(double(stepCount+1)/param.totalCount*PI))/2;
+        double body0_2_c0[6];
+        memcpy(body0_2_c0,Config0_2_c0.BodyPee,sizeof(double)*6);
+        body0_2_c0[5]=asin(sin(body0_2_c0[5]));
+        double body1_2_c0[6];
+        memcpy(body1_2_c0,Config1_2_c0.BodyPee,sizeof(double)*6);
+        body1_2_c0[5]=asin(sin(body1_2_c0[5]));
+
+        for(int i=0;i<6;i++)//euler interpolation on a plane
+        {
+            config_2_c0.BodyPee[i]=body0_2_c0[i]+s*(body1_2_c0[i]-body0_2_c0[i]);
+        }
+
+        //swing Leg Pee 2 c0
+        double swLegPee2c0[9];
+
+        for(int i=0;i<3;i++)
+        {
+            g.TrajEllipsoid(&Config0_2_c0.LegPee[swingID[i]*3],&Config1_2_c0.LegPee[swingID[i]*3],stepCount+1,param.totalCount,&swLegPee2c0[i*3]);
+        }
+
+
+
+        //using force
+        static double swTD_2_c0[9];
+
+        if(isForceUsed==false)
+        {
+            if(stepCount+1==param.totalCount)
+                isStepFinished=true;
+            else
+                isStepFinished=false;
+        }
+        else
+        {
+            static bool isTD[3]={false,false,false};
+            bool isInTrans[6];
+            double force[6];
+            // enlong the swing leg for touching down
+            double extraCount=2000;
+            if(stepCount+1>param.totalCount)
+            {
+                // 5cm in 2s
+                double new_s=(1-cos(double(stepCount+1-param.totalCount)/extraCount*PI))/2;
+                for(int i=0;i<3;i++)
+                {
+                    swLegPee2c0[3*i]=Config1_2_c0.LegPee[3*swingID[i]];
+                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.04;//y direction enlong
+                    swLegPee2c0[3*i+2]=Config1_2_c0.LegPee[3*swingID[i]+2];
+                }
+                memcpy(config_2_c0.BodyPee,Config1_2_c0.BodyPee,sizeof(double)*6);
+
+                //            config_2_b0.BodyPee[0]=TM_b1_2_b0[3];
+                //            config_2_b0.BodyPee[1]=TM_b1_2_b0[7];
+                //            config_2_b0.BodyPee[2]=TM_b1_2_b0[11];
+
+            }
+
+            //force judgement
+            for(int i=0;i<6;i++)
+            {
+                force[i]=param.force_data->at(Leg2Force[i]).Fz;
+            }
+
+            for (int i=0;i<6;i++)
+            {
+                //            if(force[i]<-50&&force[i]>-200)
+                if(force[i]<-50)
+                    isInTrans[i]=true;
+                else
+                    isInTrans[i]=false;
+            }
+
+
+            static int gaitforcestate;
+
+            if(stepCount==1)
+                gaitforcestate=GaitForceState::Swing;
+
+
+            switch(gaitforcestate)
+            {
+
+            case GaitForceState::Swing:
+                if(stepCount>param.totalCount*1/3)
+                {
+                    if(isInTrans[swingID[0]]==true||isInTrans[swingID[1]]==true||isInTrans[swingID[2]]==true)
+                    {
+                        gaitforcestate=GaitForceState::TouchDown;
+                        rt_printf("to touchdown!\n");
+                    }
+                }
+                isStepFinished=false;
+                break;
+
+            case GaitForceState::TouchDown:
+
+                for(int i=0;i<3;i++)
+                {
+                    if(isInTrans[swingID[i]]==true&&isTD[i]==false)
+                    {
+                        memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+                        isTD[i]=true;
+                        rt_printf("leg touch down! %d count:%d\n",swingID[i],stepCount);
+                    }
+                    if(stepCount+1==param.totalCount+extraCount&&isInTrans[swingID[i]]==false&&isTD[i]==false)
+                    {
+                        memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+                        isTD[i]=true;
+                        rt_printf("leg touch down time up! %d count:%d\n",swingID[i],stepCount);
+                    }
+                    // else if(isInTrans[swingID[i]]==true&&isTD[i]==true)
+                    else if(isTD[i]==true)
+                    {
+                        memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+                    }
+
+                }
+
+                if(isTD[0]==true&&isTD[1]==true&&isTD[2]==true)
+                {
+                    gaitforcestate=GaitForceState::Stance;
+                    for(int i=0;i<3;i++)
+                        memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+
+                    rt_printf("to stance!\n");
+
+                }
+
+                isStepFinished=false;
+                break;
+
+            case GaitForceState::Stance:
+                isTD[0]=false;
+                isTD[1]=false;
+                isTD[2]=false;
+
+                for(int i=0;i<3;i++)
+                {
+                    memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+                    memcpy(&Config1_2_c0.LegPee[swingID[i]*3],&swTD_2_c0[i*3],sizeof(double)*3);// only update for three swing legs
+                }
+                //                 double tm_b1_2_b0[16];
+                //                 aris::dynamic::s_pe2pm(m_NextConfig_b0.BodyPee,tm_b1_2_b0,"213");
+                //                 double tm_b0_2_b1[16];
+                //                 aris::dynamic::s_inv_pm(tm_b1_2_b0,tm_b0_2_b1);
+                //                 LegsTransform(m_NextConfig_b0.LegPee,tm_b0_2_b1,m_NextConfig_b1.LegPee);
+
+
+                isStepFinished=true;
+                break;
+            }
+        }
+
+
+
+
+        for (int i=0;i<3;i++)
+        {
+            memcpy(&config_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);//stancelegs are ok
+            memcpy(&config_2_c0.LegPee[swingID[i]*3],&swLegPee2c0[3*i],sizeof(double)*3);
+        }
+
+//        if(stepCount%100==0)
+//        {
+//            cout<<"count"<<stepCount<<endl;
+
+//            cout<<" Config current_2_c0, body"<<endl;
+//            g.Display(config_2_c0.BodyPee,6);
+//            cout<<" Config current_2_c0, leg"<<endl;
+//            g.Display(config_2_c0.LegPee,18);
+//        }
+
+
+        //       // isStepFinished=g.GenerateTraj(stepCount+1,param.totalCount,param,config_2_b0);
+//        beginMak.setPrtPm(TM_c0_2_g);
+//        beginMak.update();
+//        robot.GetPeb(Config0_2_c0.BodyPee,beginMak,"213");
+//        robot.GetPee(Config0_2_c0.LegPee,beginMak);
+
+        robot.SetPee(config_2_c0.LegPee,beginMak);
+        robot.SetPeb(config_2_c0.BodyPee,beginMak,"213");
+
+        stepCount+=1;
+
+        if (isStepFinished==true)
+        {
+            int swingID_rec[3];
+            memcpy(swingID_rec,swingID,sizeof(int)*3);
+            memcpy(swingID,stanceID,sizeof(int)*3);
+            memcpy(stanceID,swingID_rec,sizeof(int)*3);
+
+
+            stepNumFinished+=1;
+            stepCount=0;
+            isStepFinished=false;
+
+            if (gaitCommand==GaitCommand::Stop)
+            {
+                gaitState=GaitState::End;
+                gaitCommand=GaitCommand::NoCommand;
+            }
+            else if(param.m==GaitMode::Single)
+                gaitState=GaitState::End;
+            else
+                gaitState=GaitState::Scanning;
+
+        }
+        return 1;
+
+    case GaitState::End:
+        dDist=0;
+        dAngle=0;
+        gaitState=GaitState::None;
+
+        rt_printf("step end\n");
+        stepNumFinished=0;
+        return 0;
+        //    default:
+        //        gaitState=GaitState::None;
+        //        return 0;
+    }
+}
+
+void GaitGenerator::GetLeg2bodyFromLegs( double* Legs, double *TM_C2B)
+{
+
+    double stanceLegs[9];
+    double swingLegs[9];
+    for (int i=0;i<3;i++)
+    {
+        memcpy(&stanceLegs[3*i],&Legs[stanceID[i]*3],sizeof(double)*3);
+        memcpy(&swingLegs[3*i],&Legs[swingID[i]*3],sizeof(double)*3);
+    }
+
+    double y[3];
+    double z[3];
+    double x_prime[3]{1,0,0};
+    double x[3];
+
+    GetPlaneFromStanceLegs(stanceLegs,y);
+
+    //GetPlaneFromStanceLegs(SWFoothold_2_b0,y1_2_b0);
+    aris::dynamic::s_cro3(x_prime,y,z);
+    aris::dynamic::s_cro3(y,z,x);
+    normalize(x);
+    normalize(y);
+    normalize(z);
+
+
+    //  double TriC_origin[3];
+    double TriC_stance[3];
+    double TriC_swing[3];
+    TriangleIncenter(stanceLegs,TriC_stance);
+    TriangleIncenter(swingLegs,TriC_swing);
+
+
+    TM_C2B[0]=x[0];
+    TM_C2B[1]=y[0];
+    TM_C2B[2]=z[0];
+    TM_C2B[3]=0.5*TriC_stance[0]+0.5*TriC_swing[0];
+    TM_C2B[4]=x[1];
+    TM_C2B[5]=y[1];
+    TM_C2B[6]=z[1];
+    TM_C2B[7]=0.5*TriC_stance[1]+0.5*TriC_swing[1];
+    TM_C2B[8]=x[2];
+    TM_C2B[9]=y[2];
+    TM_C2B[10]=z[2];
+    TM_C2B[11]=0.5*TriC_stance[2]+0.5*TriC_swing[2];
+    TM_C2B[15]=1;
+}
+
+void GaitGenerator::slopeGetNextConfig(aris::dynamic::Model &model,const double IMUpitch,const double IMUroll)
+{
+    // 1. get current body and leg in c0 coordinate system
+    auto &robot = static_cast<Robots::RobotBase &>(model);
+    static aris::dynamic::FloatMarker beginMak{robot.ground()};
+
+    // ////   static double Config0_2_b0[16];
+    static RobotConfig Config0_2_c0;
+    static RobotConfig Config1_2_c0;
+    static RobotConfig Config1_2_c1;
+    static RobotConfig Config1_2_b1;
+
+    RobotConfig Config0_2_b0;
+    robot.GetPee(Config0_2_b0.LegPee,robot.body());
+
+    double TM_c0_2_b0[16];
+    GetLeg2bodyFromLegs(Config0_2_b0.LegPee,TM_c0_2_b0);
+    double TM_c0_2_g[16];
+    aris::dynamic::s_pm_dot_pm(*robot.body().pm(),TM_c0_2_b0,TM_c0_2_g);
+
+    beginMak.setPrtPm(TM_c0_2_g);
+    beginMak.update();
+    robot.GetPeb(Config0_2_c0.BodyPee,beginMak,"213");
+    robot.GetPee(Config0_2_c0.LegPee,beginMak);
+
+    // 2.set walking params in c0 coordinate system
+    //firstly, could get vision to TM_visTerran_2_c0
+
+    //otherwise, use only the current ground, in which c0  coicide with the ground
+
+    //first compute leg
+
+    double TM_c1_2_c0[16];
+    double TM_c0_2_c1[16];
+
+    double c1_2_c0[6];
+    c1_2_c0[0]=0;//x
+    c1_2_c0[1]=0;
+    c1_2_c0[2]=-m_Params.d;
+    c1_2_c0[3]=0;
+    c1_2_c0[4]=0;
+    c1_2_c0[5]=0;
+    aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
+    aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
+
+    //stance legs 2 c0
+    for(int i=0;i<3;i++)
+        memcpy(&Config1_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);
+    //swing legs 2 c0
+    double SW_2_c1[9];
+    double SW_2_c0[9];
+
+    for(int i=0;i<3;i++)
+    {
+        memcpy(&SW_2_c1[i*3],&stdLegPee2C[swingID[i]*3],sizeof(double)*3);
+        SW_2_c1[i*3]=SW_2_c1[i*3];
+        SW_2_c1[i*3+1]=SW_2_c1[i*3+1];
+        SW_2_c1[i*3+2]=SW_2_c1[i*3+1]-m_Params.d/2;
+        aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,&SW_2_c1[i*3],&SW_2_c0[i*3]);
+        memcpy(&Config1_2_c0.LegPee[swingID[i]*3],&SW_2_c0[i*3],sizeof(double)*3);
+    }
+    // body 2 c0
+    double body_2_c1[6];
+    double body_2_c0[6];
+    body_2_c1[0]=0;//+offset
+    body_2_c1[1]=-stdLegPee2B[1];//0.85+offset
+    body_2_c1[2]=0;//+offset
+    body_2_c1[3]=0;
+    body_2_c1[4]=0;
+    body_2_c1[5]=0;
+
+    aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,body_2_c1,body_2_c0);
+    body_2_c0[3]=c1_2_c0[3];
+    body_2_c0[4]=c1_2_c0[4];
+    body_2_c0[5]=c1_2_c0[5];
+    memcpy(&Config1_2_c0.BodyPee,body_2_c0,sizeof(double)*6);
+
+    double TM_b1_2_c0[16];
+    double TM_b1_2_g[16];
+    aris::dynamic::s_pe2pm(body_2_c0,TM_b1_2_c0,"213");
+    aris::dynamic::s_pm_dot_pm(TM_c0_2_g,TM_b1_2_c0,TM_b1_2_g);
+
+    beginMak.setPrtPm(TM_b1_2_g);
+    beginMak.update();
+    robot.GetPeb(Config1_2_b1.BodyPee,beginMak,"213");
+    robot.GetPee(Config1_2_b1.LegPee,beginMak);
+
+    // TRaj
+
+    RobotConfig  config_2_b0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //compute legs to b0;
+
+
+
+
+    //    stance_O_2_b0[0]=stance_C_2_b0[0];//+m_Params.d/2;
+    //    stance_O_2_b0[1]=stance_C_2_b0[1];
+    //    stance_O_2_b0[2]=stance_C_2_b0[2]+m_Params.d/2;
+
+
+
+    //    beginMak.setPrtPm(*robot.body().pm());
+    //    beginMak.update();
+
+
+
+
+
+
+    //    memset(m_CurrentConfig_b0.BodyPee,0,sizeof(double)*6);
+    //    memcpy(m_CurrentConfig_b0.LegPee,legPee2b,sizeof(double)*18);
+
+    //    memset(m_CurrentConfig_g.BodyPee,0,sizeof(double)*6);
+    //    m_CurrentConfig_g.BodyPee[3]=0;
+    //    m_CurrentConfig_g.BodyPee[4]=pitch;
+    //    m_CurrentConfig_g.BodyPee[5]=roll;
+
+
+    //    double TM_b0_2_g[16];
+    //    aris::dynamic::s_pe2pm(m_CurrentConfig_g.BodyPee,TM_b0_2_g,"213");
+
+    //    LegsTransform(legPee2b,TM_b0_2_g,m_CurrentConfig_g.LegPee);
+    //    double swingid[3];
+    //    memcpy(swingid,swingID,sizeof(double)*3);
+    //    memcpy(swingID,stanceID,sizeof(double)*3);
+    //    memcpy(stanceID,swingid,sizeof(double)*3);
+
+
+
+
+
+
+
+}
+
+
 
 
 void parseAdjustSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
@@ -284,6 +961,7 @@ void parseGoSlopeHuman(const std::string &cmd, const std::map<std::string, std::
     cout<<"parse finished"<<endl;
 }
 // could be one step gait or several-step gait
+
 int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in)
 {
 
@@ -600,13 +1278,84 @@ int GoSlopeFast(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase 
 
 GaitGenerator::GaitGenerator()
 {
+    memcpy(m_CurrentConfig_b0.LegPee,stdLegPee2B,sizeof(double)*18);
+
+    memcpy(m_NextConfig_b1.LegPee,stdLegPee2B,sizeof(double)*18);
 }
 
 
 void GaitGenerator::GaitDetermineNextConfigByVision()
 {
-    //  1. get the estimated next robot configuration
+    //    //    //0. adjustment
+    //    double last_x1_2_b1[3];
+    //    double last_x1_2_b1_prime[3];
+    //    double last_y1_2_b1[3];
+    //    double last_z1_2_b1[3];
+
+    //    double last_SWFoothold_2_b1[9];
+    //    for(int i=0;i<3;i++)
+    //    {
+    //        memcpy(&last_SWFoothold_2_b1[3*i],&m_NextConfig_b1.LegPee[stanceID[i]*3],sizeof(double)*3); // stance this step, swing last step
+    //    }
+    //    //   cout<<"last swing foot to body"<<endl;
+    //    //    Display(last_SWFoothold_2_b1,9);
+
+    //    GetPlaneFromStanceLegs(last_SWFoothold_2_b1,last_y1_2_b1);
+
+    //    last_x1_2_b1_prime[0]=1;
+    //    last_x1_2_b1_prime[1]=0;
+    //    last_x1_2_b1_prime[2]=0;
+    //    aris::dynamic::s_cro3(last_x1_2_b1_prime,last_y1_2_b1,last_z1_2_b1);
+    //    aris::dynamic::s_cro3(last_y1_2_b1,last_z1_2_b1,last_x1_2_b1);
+    //    normalize(last_x1_2_b1);
+    //    normalize(last_y1_2_b1);
+    //    normalize(last_z1_2_b1);
+
+    //    double last_TM_leg_2_b0[16];
+    //    last_TM_leg_2_b0[0]=last_x1_2_b1[0];
+    //    last_TM_leg_2_b0[1]=last_y1_2_b1[0];
+    //    last_TM_leg_2_b0[2]=last_z1_2_b1[0];
+    //    last_TM_leg_2_b0[4]=last_x1_2_b1[1];
+    //    last_TM_leg_2_b0[5]=last_y1_2_b1[1];
+    //    last_TM_leg_2_b0[6]=last_z1_2_b1[1];
+    //    last_TM_leg_2_b0[8]=last_x1_2_b1[2];
+    //    last_TM_leg_2_b0[9]=last_y1_2_b1[2];
+    //    last_TM_leg_2_b0[10]=last_z1_2_b1[2];
+    //    last_TM_leg_2_b0[15]=1;
+
+    //    //double last_TM_b1_2_leg[16];
+
+    //    //    //  1. get the estimated next robot configuration
+    //    double est_TM_b1_2_b0[16];
+    //    double est_TM_b1_2_leg[16];
+
+    //    double dstraight;
+    //    if(m_Params.b!=0)
+    //    {
+    //        double r;
+    //        r=m_Params.d/m_Params.b;
+    //        dstraight=abs(r*sin(m_Params.b/2)*2);
+    //        double axisRaw[3];
+    //        axisRaw[0]=-r*cos(m_Params.a);
+    //        axisRaw[1]=0;
+    //        axisRaw[2]=r*sin(m_Params.a);
+    //        RyAlongAxis(m_Params.b,axisRaw,est_TM_b1_2_leg);
+    //    }
+    //    else
+    //    {
+    //        dstraight=m_Params.d;
+    //        double Displacement[3];
+    //        Displacement[0]=-dstraight*sin(m_Params.a);
+    //        Displacement[1]=0;
+    //        Displacement[2]=-dstraight*cos(m_Params.a);
+    //        Trans(Displacement,est_TM_b1_2_leg);
+    //    }
+
+    //    aris::dynamic::s_pm_dot_pm(last_TM_leg_2_b0,est_TM_b1_2_leg,est_TM_b1_2_b0);
+
+    //   1. get the estimated next robot configuration
     double est_TM_b1_2_b0[16];
+
     double dstraight;
     if(m_Params.b!=0)
     {
@@ -628,9 +1377,9 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
         Displacement[2]=-dstraight*cos(m_Params.a);
         Trans(Displacement,est_TM_b1_2_b0);
     }
-    //        cout<<"dstraight"<<dstraight<<endl;
-    //        cout<<"est body tm"<<endl;
-    //        Display(est_TM_b1_2_b0,16);
+    cout<<"dstraight"<<dstraight<<endl;
+    cout<<"est body tm"<<endl;
+    Display(est_TM_b1_2_b0,16);
 
     //2. Find  footholds
     double TM_b0_2_g[16];
@@ -643,16 +1392,17 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     GetBodyOffset(estBody_2_g[4],estBody_2_g[5],est_BodyOffset);
 
     //       cout<<"est pitch"<<estBody_2_g[4]<<endl;
-    //        cout<<"est roll"<<estBody_2_g[5]<<endl;
+    //       cout<<"est roll"<<estBody_2_g[5]<<endl;
 
     //estimate  footholds w.r.t. b0
     double estSWFoothold_2_b0[9];
     double estSWFoothold_2_b1[9];
+    double averageH=(m_CurrentConfig_b0.LegPee[0+1]+m_CurrentConfig_b0.LegPee[3+1]+m_CurrentConfig_b0.LegPee[6+1]+m_CurrentConfig_b0.LegPee[9+1]+m_CurrentConfig_b0.LegPee[12+1]+m_CurrentConfig_b0.LegPee[15+1])/6;
     for(int i=0;i<3;i++)
     {
         estSWFoothold_2_b1[i*3+0]=-est_BodyOffset[0]+stdLegPee2B[swingID[i]*3+0]-sin(m_Params.a)*dstraight/2;
         //        estSWFoothold_2_b1[i*3+1]=-est_BodyOffset[1]+stdLegPee2B[swingID[i]*3+1];
-        estSWFoothold_2_b1[i*3+1]=m_CurrentConfig_b0.LegPee[swingID[i]*3+1];// refer to the current robot elevation
+        estSWFoothold_2_b1[i*3+1]=averageH ;// ignored , because map will find out,refer to the current robot elevation
         estSWFoothold_2_b1[i*3+2]=-est_BodyOffset[2]+stdLegPee2B[swingID[i]*3+2]-cos(m_Params.a)*dstraight/2;//relavant to the angle of a
         aris::dynamic::s_pm_dot_pnt(est_TM_b1_2_b0,&estSWFoothold_2_b1[i*3],&estSWFoothold_2_b0[i*3]);
     }
@@ -663,9 +1413,9 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     GetTerrainHeight2b(&SWFoothold_2_b0[0]);
     GetTerrainHeight2b(&SWFoothold_2_b0[3]);
     GetTerrainHeight2b(&SWFoothold_2_b0[6]);
-//    cout<<"swingID"<<swingID[0]<<swingID[1]<<swingID[2]<<endl;
-//    cout<<"swing foothold ........."<<endl;
-//    Display(SWFoothold_2_b0,9);
+    //    cout<<"swingID"<<swingID[0]<<swingID[1]<<swingID[2]<<endl;
+    //    cout<<"swing foothold ........."<<endl;
+    //    Display(SWFoothold_2_b0,9);
 
     //3.  determine bodypos w.r.t. b0
     double x1_2_b0[3];
@@ -721,10 +1471,10 @@ void GaitGenerator::GaitDetermineNextConfigByVision()
     BodyPos_2_b1_spCenter[2]=dstraight/2*cos(m_Params.a)+BodyOffset[2];
     aris::dynamic::s_pm_dot_v3(TM_b1_2_b0,BodyPos_2_b1_spCenter,BodyPos_2_b0_spCenter);
 
-//    cout<<" BodyPos_2_b0_spCenter"<<endl;
-//    Display(BodyPos_2_b0_spCenter,3);
-//    cout<<" BodyPos_2_b1_spCenter"<<endl;
-//    Display(BodyPos_2_b1_spCenter,3);
+    //    cout<<" BodyPos_2_b0_spCenter"<<endl;
+    //    Display(BodyPos_2_b0_spCenter,3);
+    //    cout<<" BodyPos_2_b1_spCenter"<<endl;
+    //    Display(BodyPos_2_b1_spCenter,3);
 
     Body_2_b0[0]=BodyPos_2_b0_spCenter[0]+SPCenter[0];
     Body_2_b0[1]=BodyPos_2_b0_spCenter[1]+SPCenter[1];
@@ -951,8 +1701,8 @@ void GaitGenerator::GaitDetermineNextConfigFast(double bodyVel, double acc,doubl
     double est_BodyOffset[3];
     GetBodyOffset(estBody_2_g[4],estBody_2_g[5],est_BodyOffset);
 
-        cout<<"est pitch"<<estBody_2_g[4]<<endl;
-        cout<<"est roll"<<estBody_2_g[5]<<endl;
+    cout<<"est pitch"<<estBody_2_g[4]<<endl;
+    cout<<"est roll"<<estBody_2_g[5]<<endl;
 
     //estimate  footholds w.r.t. b0
     double estSWFoothold_2_b0[9];
@@ -1038,17 +1788,17 @@ void GaitGenerator::GaitDetermineNextConfigFast(double bodyVel, double acc,doubl
     //    //              Display(BodyPos_2_b1_spCenter,3);
     //    //              cout<<"BodyPos_2_b0_spCenter"<<endl;
     //    //             Display(BodyPos_2_b0_spCenter,3);
-     cout<<"Body_2_b0"<<endl;
-     Display(Body_2_b0,3);
+    cout<<"Body_2_b0"<<endl;
+    Display(Body_2_b0,3);
 
     //    cout<<"TMB1_2_B0"<<endl;
     //    Display(TM_b1_2_b0,16);
     //    cout<<"TMB0_2_B1"<<endl;
     //    Display(TM_b0_2_b1,16);
-        cout<<"currentlegPee2B0"<<endl;
-        Display(m_CurrentConfig_b0.LegPee,18);
-        cout<<"nextlegPee2B0"<<endl;
-        Display(m_NextConfig_b0.LegPee,18);
+    cout<<"currentlegPee2B0"<<endl;
+    Display(m_CurrentConfig_b0.LegPee,18);
+    cout<<"nextlegPee2B0"<<endl;
+    Display(m_NextConfig_b0.LegPee,18);
     //    cout<<"currentlegPee2B0"<<endl;
     //    Display(m_CurrentConfig_b0.LegPee,18);
     //    cout<<"nextlegPee2B1"<<endl;
@@ -1122,11 +1872,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
     TM_2_b0[7]=config_2_b0.BodyPee[1];
     TM_2_b0[11]=config_2_b0.BodyPee[2];
 
-
     aris::dynamic::s_pm2pe(TM_2_b0,config_2_b0.BodyPee,"213");//body ok
-
-
-
 
     //swing Leg Pee
     double swLegPee2b[9];
@@ -1150,11 +1896,9 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
             ret=true;
         else
             ret=false;
-
     }
     else
     {
-
         static bool isTD[3]={false,false,false};
         bool isInTrans[6];
         double force[6];
@@ -1171,10 +1915,11 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
                 swLegPee2b0[3*i+1]=m_NextConfig_b0.LegPee[3*swingID[i]+1]-new_s*0.04;//y direction enlong
                 swLegPee2b0[3*i+2]=m_NextConfig_b0.LegPee[3*swingID[i]+2];
             }
+            memcpy(config_2_b0.BodyPee,m_NextConfig_b0.BodyPee,sizeof(double)*6);
 
-            config_2_b0.BodyPee[0]=TM_b1_2_b0[3];
-            config_2_b0.BodyPee[1]=TM_b1_2_b0[7];
-            config_2_b0.BodyPee[2]=TM_b1_2_b0[11];
+            //            config_2_b0.BodyPee[0]=TM_b1_2_b0[3];
+            //            config_2_b0.BodyPee[1]=TM_b1_2_b0[7];
+            //            config_2_b0.BodyPee[2]=TM_b1_2_b0[11];
 
         }
 
@@ -1187,7 +1932,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         for (int i=0;i<6;i++)
         {
             //            if(force[i]<-50&&force[i]>-200)
-            if(force[i]<-80)
+            if(force[i]<-50)
                 isInTrans[i]=true;
             else
                 isInTrans[i]=false;
@@ -1199,8 +1944,8 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         if(count==1)
             gaitforcestate=GaitForceState::Swing;
 
-//        if(count==totalCount+extraCount)
-//            gaitforcestate=GaitForceState::Stance;
+        //        if(count==totalCount+extraCount)
+        //            gaitforcestate=GaitForceState::Stance;
 
         switch(gaitforcestate)
         {
@@ -1211,7 +1956,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         //            if(isInTrans[swingID[0]]==false&&isInTrans[swingID[1]]==false&&isInTrans[swingID[2]]==false)
         //                gaitforcestate=GaitForceState::Swing;
         case GaitForceState::Swing:
-            if(count>totalCount*2/3)
+            if(count>totalCount*1/3)
             {
                 if(isInTrans[swingID[0]]==true||isInTrans[swingID[1]]==true||isInTrans[swingID[2]]==true)
                 {
@@ -1230,13 +1975,13 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
                 {
                     memcpy(&swTD2b0[i*3],&swLegPee2b0[i*3],sizeof(double)*3);
                     isTD[i]=true;
-                    rt_printf("leg touch down! %d\n",swingID[i]);
+                    rt_printf("leg touch down! %d count:%d\n",swingID[i],count);
                 }
                 if(count==totalCount+extraCount&&isInTrans[swingID[i]]==false&&isTD[i]==false)
                 {
                     memcpy(&swTD2b0[i*3],&swLegPee2b0[i*3],sizeof(double)*3);
                     isTD[i]=true;
-                    rt_printf("leg touch down! %d\n",swingID[i]);
+                    rt_printf("leg touch down time up! %d count:%d\n",swingID[i],count);
                 }
                 // else if(isInTrans[swingID[i]]==true&&isTD[i]==true)
                 else if(isTD[i]==true)
@@ -1266,8 +2011,13 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
             for(int i=0;i<3;i++)
             {
                 memcpy(&swLegPee2b0[i*3],&swTD2b0[i*3],sizeof(double)*3);
-                memcpy(&m_NextConfig_b0.LegPee[swingID[i]*3],&swTD2b0[i*3],sizeof(double)*3);// only update for once
+                memcpy(&m_NextConfig_b0.LegPee[swingID[i]*3],&swTD2b0[i*3],sizeof(double)*3);// only update for three swing legs
             }
+            double tm_b1_2_b0[16];
+            aris::dynamic::s_pe2pm(m_NextConfig_b0.BodyPee,tm_b1_2_b0,"213");
+            double tm_b0_2_b1[16];
+            aris::dynamic::s_inv_pm(tm_b1_2_b0,tm_b0_2_b1);
+            LegsTransform(m_NextConfig_b0.LegPee,tm_b0_2_b1,m_NextConfig_b1.LegPee);
 
             ret=true;
             break;
@@ -1488,7 +2238,7 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     //        pos[1]=gridMap[grid[0]][grid[1]];
     //    else
     //        pos[1]=-0.85;
-    pos[1]+=0.04;
+    pos[1]+=0.0;
 
     rt_printf("From planner: terrain height for swing leg from vision %f\n",pos[1]);
 

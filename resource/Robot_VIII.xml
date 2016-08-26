@@ -521,6 +521,7 @@
                     <t1 abbreviation="t" type="intArray" default="3000"/>
                     <t2 type="intArray" default="3000"/>
                     <margin_offset abbreviation="m" type="double" default="0.01"/>
+                    <require_zero abbreviation="z" type="int" default="1"/>
                 </rc_param>
             </rc>
             <wk default="wk_param">
@@ -543,6 +544,16 @@
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>
             </gsv>
+            <gsv2 default="wks_param">
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="-0.1"/>
+                    <height abbreviation="h" type="double" default="0.08"/>
+                    <alpha abbreviation="a" type="double" default="0"/>
+                    <beta abbreviation="b" type="double" default="0"/>
+                    <mode abbreviation="m" type="int" default="1"/>
+                  </wks_param>
+            </gsv2>
             <gsf default="wks_param">
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
@@ -663,7 +674,7 @@
 		</EK1122>
             </SlaveType>
             <Slave>
-                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1"/>
+                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1" kp="120"/>
                 <Motion2 type="ElmoSoloWhistle"  min_pos="0.0669" max_pos="10.080" max_vel="0.9481" home_pos="0.669" input2count="9216000" abs_id="0"/>
                 <Motion3 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 2"/>
                 <Motion4 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 5"/>
@@ -684,14 +695,14 @@
                 <Motion19 type="ElmoSoloWhistle" min_pos="-100" max_pos="100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id="18"/>
 		<SlaveStation1 type="EK1100" />
 		<Junction1 type="EK1122" />
-            	<ForceSensor1 type="AtiForceSensor"/>
-                <ForceSensor6 type="AtiForceSensor"/>
+                <ForceSensor1 type="AtiForceSensor" abs_id="3"/>
+                <ForceSensor6 type="AtiForceSensor" abs_id="2"/>
 		<Junction2 type="EK1122" />
-            	<ForceSensor2 type="AtiForceSensor"/>
-            	<ForceSensor3 type="AtiForceSensor"/>
+                <ForceSensor2 type="AtiForceSensor" abs_id="4"/>
+                <ForceSensor3 type="AtiForceSensor" abs_id="0"/>
 		<Junction3 type="EK1122" />
-            	<ForceSensor4 type="AtiForceSensor"/>
-            	<ForceSensor5 type="AtiForceSensor"/>
+                <ForceSensor4 type="AtiForceSensor" abs_id="5"/>
+                <ForceSensor5 type="AtiForceSensor" abs_id="1"/>
             </Slave>
         </EtherCat>
     </Controller>
@@ -699,5 +710,5 @@
         <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,PI,PI/2,3*PI/2}" PeImu2Body="{0,0,0,0,PI/2,PI/2}"/>
         <Vision type="kinect2.0"/>
     </Sensors>
-    <UDP remote_ip="192.168.1.102" remote_port="6661" local_port="6660"/>
+    <UDP remote_ip="192.168.1.101" remote_port="6661" local_port="6660"/>
 </RobotVIII>
