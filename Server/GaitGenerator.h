@@ -109,6 +109,7 @@ public:
     void GaitDetermineNextConfigFast(double bodyVel,double acc, double bodyVelDesire);
 
     bool GenerateTraj(const int count,const int totalCount,WalkGaitParams param,RobotConfig& config_2_b0);
+
     void isForceInTransition(double * force,bool* judge);
 
 
@@ -145,7 +146,7 @@ public:
 
     // useful functions
     void GetTerrainHeight2b( double* pos);
-    void GetBodyOffset(const double yaw, const double pitch, double* offset);
+    void GetBodyOffset(const double pitch, const double roll, double* offset);
     void GetPlaneFromStanceLegs(const double* stanceLegs,double* normalVector);
     void TMbody(const double* bodyP,const double* bodyR,double*tmbody);
     void Trans(const double* trans,double*TM);
@@ -167,6 +168,8 @@ public:
     void TM_2_Rot(const double* TM, double& theta, double* u);
     void Display(const double *vec,int length);
     void TrajEllipsoid(const double *p0,const double* p1,const int count,const int totalCount,double* legpos);
+    void TrajEllipsoid(const double *p0,const double* p1,const int count,const int totalCount,const double h,double* legpos);
+
     double Variance(double*points,int N);
     double Mean(double*points, int N);
 };

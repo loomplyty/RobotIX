@@ -88,8 +88,12 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
     static GaitGenerator g;
 
     auto &robot = static_cast<Robots::RobotBase &>(model);
-    auto &param=static_cast<const WalkGaitParams &>(param_in);
-    static aris::dynamic::FloatMarker beginMak{robot.ground()};
+    auto &Param=static_cast<const WalkGaitParams &>(param_in);
+    WalkGaitParams param;
+    memcpy(&param,&Param,sizeof(param));
+    param.d+=-dDist;
+    //param.b+=dAngle;
+     static aris::dynamic::FloatMarker beginMak{robot.ground()};
 
     static int stepNumFinished=0;
     static int stepCount=0;
@@ -171,6 +175,8 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
         if(stepCount==0) //update vision and imu to update this configuration and compute the next configuration
         {
             rt_printf("a new step begins...swingID %d %d %d\n",swingID[0],swingID[1],swingID[2]);
+            rt_printf("walk d %f, walk b %f \n",param.b,param.d);
+
             double euler[3];
             if(isIMUUsed==true)
                 param.imu_data->toEulBody2Ground(euler,"213");
@@ -290,9 +296,11 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
             // body 2 c0
             double body_2_c1[6];
             double body_2_c0[6];
-            body_2_c1[0]=0;//+offset
-            body_2_c1[1]=-stdLegPee2B[1];//0.85+offset
-            body_2_c1[2]=0;//+offset
+            double bodyOffset[3];
+            g.GetBodyOffset(euler[1],euler[2],bodyOffset);
+            body_2_c1[0]=0+bodyOffset[0];//+offset
+            body_2_c1[1]=-stdLegPee2B[1]+bodyOffset[1];//0.85+offset
+            body_2_c1[2]=0+bodyOffset[2];//+offset
             body_2_c1[3]=0;
             body_2_c1[4]=0;
             body_2_c1[5]=0;
@@ -363,7 +371,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
 
         for(int i=0;i<3;i++)
         {
-            g.TrajEllipsoid(&Config0_2_c0.LegPee[swingID[i]*3],&Config1_2_c0.LegPee[swingID[i]*3],stepCount+1,param.totalCount,&swLegPee2c0[i*3]);
+            g.TrajEllipsoid(&Config0_2_c0.LegPee[swingID[i]*3],&Config1_2_c0.LegPee[swingID[i]*3],stepCount+1,param.totalCount,param.h,&swLegPee2c0[i*3]);
         }
 
 
@@ -373,7 +381,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
 
         if(isForceUsed==false)
         {
-            if(stepCount+1==param.totalCount)
+            if(stepCount+1>=param.totalCount)
                 isStepFinished=true;
             else
                 isStepFinished=false;
@@ -384,7 +392,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
             bool isInTrans[6];
             double force[6];
             // enlong the swing leg for touching down
-            double extraCount=param.totalCount*0.8;
+            double extraCount=param.totalCount*0.5;
             if(stepCount+1>param.totalCount)
             {
                 // 5cm in 2s
@@ -392,7 +400,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
                 for(int i=0;i<3;i++)
                 {
                     swLegPee2c0[3*i]=Config1_2_c0.LegPee[3*swingID[i]];
-                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.04;//y direction enlong
+                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.05;//y direction enlong
                     swLegPee2c0[3*i+2]=Config1_2_c0.LegPee[3*swingID[i]+2];
                 }
                 memcpy(config_2_c0.BodyPee,Config1_2_c0.BodyPee,sizeof(double)*6);
@@ -2445,9 +2453,9 @@ void GaitGenerator::GetBodyOffset(const double pitch, const double roll, double*
 
     double Roll=asin(sin(roll));
     // only for test
-    offset[0]=0.9*Roll;
-    offset[1]=0.07;
-    offset[2]=-0.8*pitch;
+    offset[0]=0.9*sin(Roll);
+    offset[1]=0.03;
+    offset[2]=-0.9*sin(pitch);
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)
 {
@@ -2614,6 +2622,48 @@ void GaitGenerator::Rot_2_TM(const double theta, const double *u, double *TM)
     TM[10]=q[0]*q[0]-q[1]*q[1]-q[2]*q[2]+q[3]*q[3];
     TM[15]=1;
 }
+
+void GaitGenerator::TrajEllipsoid(const double *p0,const double* p1,const int count,const int totalCount,const double h,double* legpos)
+{
+    double theta;
+    theta=PI*(1-cos(double(count)/totalCount*PI))/2; // 0 to PI
+    double axisShort[3];
+    //    double x[3];
+    //    x[0]=1;
+    //    x[1]=0;
+    //    x[2]=0;
+    double p01[3];
+    p01[0]=p1[0]-p0[0];
+    p01[1]=p1[1]-p0[1];
+    p01[2]=p1[2]-p0[2];
+
+
+    //    if (abs(p01[2])<0.01)
+    //    {
+    //        axisShort[0]=0;
+    //        axisShort[1]=1;
+    //        axisShort[2]=0;
+    //    }
+    //    else
+    //    {
+    //        aris::dynamic::s_cro3(x,p01,axisShort);
+    //    }
+    //    axisShort[0]=axisShort[0]/axisShort[1]*m_Params.h;
+    //    axisShort[1]=m_Params.h;
+    //    axisShort[2]=axisShort[2]/axisShort[1]*m_Params.h;
+
+
+    axisShort[0]=0;
+    axisShort[1]=h;
+    axisShort[2]=0;
+
+
+    legpos[0]=(p0[0]+p1[0])/2+(p0[0]-p1[0])/2*cos(theta)+axisShort[0]*sin(theta);
+    legpos[1]=(p0[1]+p1[1])/2+(p0[1]-p1[1])/2*cos(theta)+axisShort[1]*sin(theta);
+    legpos[2]=(p0[2]+p1[2])/2+(p0[2]-p1[2])/2*cos(theta)+axisShort[2]*sin(theta);
+    // rt_printf("legpos %f %f %f\n",legpos[0],legpos[1],legpos[2]);
+}
+
 void GaitGenerator::TrajEllipsoid(const double *p0, const double *p1, const int count, const int totalCount, double *legpos)
 {
     double theta;

@@ -487,7 +487,7 @@ static auto visionSlopeThread = std::thread([]()
 
 int main(int argc, char *argv[])
 {
-      kinect2.Start();
+    kinect2.Start();
 
     std::string xml_address;
 
