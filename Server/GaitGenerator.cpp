@@ -379,7 +379,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
 
 
         //using force
-        double swTD_2_c0[9];
+        static double swTD_2_c0[9];
 
         if(isForceUsed==false)
         {
@@ -423,7 +423,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
                 for(int i=0;i<3;i++)
                 {
                     swLegPee2c0[3*i]=Config1_2_c0.LegPee[3*swingID[i]];
-                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.05;//y direction enlong
+                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.075;//y direction enlong
                     swLegPee2c0[3*i+2]=Config1_2_c0.LegPee[3*swingID[i]+2];
                 }
                 memcpy(config_2_c0.BodyPee,Config1_2_c0.BodyPee,sizeof(double)*6);
