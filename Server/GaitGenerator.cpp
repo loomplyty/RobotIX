@@ -137,6 +137,14 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     static int stepCount=0;
     static bool isStepFinished=false;
 
+    if(param.count==0)
+    {
+        rt_printf("reset static variables at start!\n");
+        stepNumFinished=0;
+        stepCount=0;
+        isStepFinished=false;
+    }
+
     static RobotConfig Config0_2_c0;
     static RobotConfig Config1_2_c0;
     static RobotConfig Config1_2_c1;
@@ -506,8 +514,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 //            else
 //                isStepFinished=false;
 //        }
+        bool isStepForceUsed;
+        if(stepCount==0)
+            isStepForceUsed=isForceUsed;
 
-        if(isForceUsed==true)
+
+        if(isStepForceUsed==true)
         {
             if(stepCount%100==0)
             {
