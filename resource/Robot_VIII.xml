@@ -554,6 +554,16 @@
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>
             </gsv2>
+            <gsvf2 default="wks_param">
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="-0.1"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
+                    <alpha abbreviation="a" type="double" default="0"/>
+                    <beta abbreviation="b" type="double" default="0"/>
+                    <mode abbreviation="m" type="int" default="1"/>
+                  </wks_param>
+            </gsvf2>
             <gsf default="wks_param">
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
@@ -680,7 +690,7 @@
 		</EK1122>
             </SlaveType>
             <Slave>
-                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 1" />
+                <Motion1 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="2048000" abs_id=" 1" kp="120"/>
                 <Motion2 type="ElmoSoloWhistle"  min_pos="0.0669" max_pos="10.080" max_vel="0.9481" home_pos="0.669" input2count="9216000" abs_id="0"/>
                 <Motion3 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 2"/>
                 <Motion4 type="ElmoSoloWhistle"  min_pos="0.0690" max_pos="10.100" max_vel="0.9481" home_pos="0.69" input2count="9216000" abs_id=" 5"/>

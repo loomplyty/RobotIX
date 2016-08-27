@@ -24,10 +24,6 @@ const double stdLegPee2B[18]=
 
 
 
-
-
-
-
 static GaitGenerator g;
 static int gaitState=GaitState::None;
 static int gaitCommand=GaitCommand::NoCommand;

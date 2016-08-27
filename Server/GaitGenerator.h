@@ -63,17 +63,18 @@ void parseForce(const std::string &cmd, const std::map<std::string, std::string>
 void parseIMU(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
-void parseForceZeroing(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
-int ForceZeroing(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
+
 
 void parseGoSlopeVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseGoSlopeVision2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parseGoSlopeVisionFast2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
 void parseGoSlopeHuman(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseGoSlopeFast(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
 int GoSlopeByVision(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
 int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
+int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
 
 int GoSlopeByHuman(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
 int GoSlopeFast(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase &param_in);
@@ -109,6 +110,7 @@ public:
     void GaitDetermineNextConfigFast(double bodyVel,double acc, double bodyVelDesire);
 
     bool GenerateTraj(const int count,const int totalCount,WalkGaitParams param,RobotConfig& config_2_b0);
+
 
     void isForceInTransition(double * force,bool* judge);
 
