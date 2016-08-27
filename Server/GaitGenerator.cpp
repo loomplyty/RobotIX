@@ -159,6 +159,8 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
                 else
                 {
                     rt_printf("scanning finished, start walking\n");
+                    rt_printf("grid map test\n");
+                    //rt_printf("elevation: %f\n",gridMap[200][200]);
                     gaitState=GaitState::Walking;
                     isScanningFinished=false;
                     scanCount=0;
@@ -377,7 +379,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
 
 
         //using force
-        static double swTD_2_c0[9];
+        double swTD_2_c0[9];
 
         if(isForceUsed==false)
         {
@@ -388,28 +390,14 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
         }
         else
         {
+            if(stepCount%100==0)
+            {
+                // rt_printf("force used!\n");
+            }
             static bool isTD[3]={false,false,false};
             bool isInTrans[6];
             double force[6];
-            // enlong the swing leg for touching down
-            double extraCount=param.totalCount*0.5;
-            if(stepCount+1>param.totalCount)
-            {
-                // 5cm in 2s
-                double new_s=(1-cos(double(stepCount+1-param.totalCount)/extraCount*PI))/2;
-                for(int i=0;i<3;i++)
-                {
-                    swLegPee2c0[3*i]=Config1_2_c0.LegPee[3*swingID[i]];
-                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.05;//y direction enlong
-                    swLegPee2c0[3*i+2]=Config1_2_c0.LegPee[3*swingID[i]+2];
-                }
-                memcpy(config_2_c0.BodyPee,Config1_2_c0.BodyPee,sizeof(double)*6);
 
-                //            config_2_b0.BodyPee[0]=TM_b1_2_b0[3];
-                //            config_2_b0.BodyPee[1]=TM_b1_2_b0[7];
-                //            config_2_b0.BodyPee[2]=TM_b1_2_b0[11];
-
-            }
 
             //force judgement
             for(int i=0;i<6;i++)
@@ -426,101 +414,140 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
                     isInTrans[i]=false;
             }
 
-
-            static int gaitforcestate;
-
-            if(stepCount==0)// ?1
+            // enlong the swing leg for touching down
+            double extraCount=param.totalCount*0.5;
+            if(stepCount+1>param.totalCount)
             {
-                gaitforcestate=GaitForceState::Swing;
-                rt_printf("to swing!\n");
-            }
-
-
-            switch(gaitforcestate)
-            {
-
-            case GaitForceState::Swing:
-                if(stepCount>param.totalCount*1/3)
-                {
-                    if(isInTrans[swingID[0]]==true||isInTrans[swingID[1]]==true||isInTrans[swingID[2]]==true)
-                    {
-                        gaitforcestate=GaitForceState::TouchDown;
-                        rt_printf("to touchdown!\n");
-                    }
-                }
-                if(stepCount+1>=param.totalCount+extraCount)
-                {
-                    memcpy(swTD_2_c0,swLegPee2c0,sizeof(double)*9);
-                    rt_printf("all leg touch down time up!   count:%d\n" ,stepCount);
-                    gaitforcestate=GaitForceState::Stance;
-                    rt_printf("to stance!\n");
-
-                }
-
-                isStepFinished=false;
-                break;
-
-            case GaitForceState::TouchDown:
-
+                // 5cm in 2s
+                double new_s=(1-cos(double(stepCount+1-param.totalCount)/extraCount*PI))/2;
                 for(int i=0;i<3;i++)
                 {
+                    swLegPee2c0[3*i]=Config1_2_c0.LegPee[3*swingID[i]];
+                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.05;//y direction enlong
+                    swLegPee2c0[3*i+2]=Config1_2_c0.LegPee[3*swingID[i]+2];
+                }
+                memcpy(config_2_c0.BodyPee,Config1_2_c0.BodyPee,sizeof(double)*6);
+            }
+
+            for(int i=0;i<3;i++)
+            {
+                if(stepCount>param.totalCount*1/2)
                     if(isInTrans[swingID[i]]==true&&isTD[i]==false)
-                    {
-                        memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+                    {// record td position
                         isTD[i]=true;
-                        rt_printf("leg touch down! %d count:%d\n",swingID[i],stepCount);
-                    }
-                    if(stepCount+1>=param.totalCount+extraCount&&isTD[i]==false)
-                    {
                         memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
-                        isTD[i]=true;
-                        rt_printf("leg touch down time up! %d count:%d\n",swingID[i],stepCount);
+                        rt_printf("leg %d\n touch down!\n",swingID[i]);
                     }
-                    // else if(isInTrans[swingID[i]]==true&&isTD[i]==true)
-                    else if(isTD[i]==true)
-                    {
-                        memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
-                        rt_printf("leg %d touch down!\n",swingID[i]);
-                    }
-
-                }
-
-                if(isTD[0]==true&&isTD[1]==true&&isTD[2]==true)
+                if(isTD[i]==true)
                 {
-                    gaitforcestate=GaitForceState::Stance;
-                    for(int i=0;i<3;i++)
-                        memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
-
-                    rt_printf("to stance!\n");
-
+                    memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
                 }
+            }
 
-                isStepFinished=false;
-                break;
-
-            case GaitForceState::Stance:
+            if(isTD[0]==true&&isTD[1]==true&&isTD[2]==true||stepCount+1==param.totalCount+extraCount)
+            {
                 isTD[0]=false;
                 isTD[1]=false;
                 isTD[2]=false;
-
-                for(int i=0;i<3;i++)
-                {
-                    memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
-                    memcpy(&Config1_2_c0.LegPee[swingID[i]*3],&swLegPee2c0[i*3],sizeof(double)*3);// only update for three swing legs
-                }
-                gaitforcestate=GaitForceState::Init;
-
-
                 isStepFinished=true;
-                break;
-            case GaitForceState::Init:
-            default:
-                break;
             }
 
 
-            // cout<<"force state"<<endl;
-            //cout<<gaitforcestate<<endl;
+
+
+
+
+//            static int gaitforcestate;
+
+//            if(stepCount==0)// ?1
+//            {
+//                gaitforcestate=GaitForceState::Swing;
+//                rt_printf("to swing!\n");
+//            }
+
+
+//            switch(gaitforcestate)
+//            {
+
+//            case GaitForceState::Swing:
+//                if(stepCount>param.totalCount*1/3)
+//                {
+//                    if(isInTrans[swingID[0]]==true||isInTrans[swingID[1]]==true||isInTrans[swingID[2]]==true)
+//                    {
+//                        gaitforcestate=GaitForceState::TouchDown;
+//                        rt_printf("to touchdown!\n");
+//                    }
+//                }
+//                if(stepCount+1>=param.totalCount+extraCount)
+//                {
+//                    memcpy(swTD_2_c0,swLegPee2c0,sizeof(double)*9);
+//                    rt_printf("all leg touch down time up!   count:%d\n" ,stepCount);
+//                    gaitforcestate=GaitForceState::Stance;
+//                    rt_printf("to stance!\n");
+
+//                }
+
+//                isStepFinished=false;
+//                break;
+
+//            case GaitForceState::TouchDown:
+
+//                for(int i=0;i<3;i++)
+//                {
+//                    if(isInTrans[swingID[i]]==true&&isTD[i]==false)
+//                    {
+//                        memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+//                        isTD[i]=true;
+//                        rt_printf("leg touch down! %d count:%d\n",swingID[i],stepCount);
+//                    }
+//                    if(stepCount+1>=param.totalCount+extraCount&&isTD[i]==false)
+//                    {
+//                        memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+//                        isTD[i]=true;
+//                        rt_printf("leg touch down time up! %d count:%d\n",swingID[i],stepCount);
+//                    }
+//                    // else if(isInTrans[swingID[i]]==true&&isTD[i]==true)
+//                    else if(isTD[i]==true)
+//                    {
+//                        memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+//                        rt_printf("leg %d touch down!\n",swingID[i]);
+//                    }
+
+//                }
+
+//                if(isTD[0]==true&&isTD[1]==true&&isTD[2]==true)
+//                {
+//                    gaitforcestate=GaitForceState::Stance;
+//                    for(int i=0;i<3;i++)
+//                        memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+
+//                    rt_printf("to stance!\n");
+
+//                }
+
+//                isStepFinished=false;
+//                break;
+
+//            case GaitForceState::Stance:
+//                isTD[0]=false;
+//                isTD[1]=false;
+//                isTD[2]=false;
+
+//                for(int i=0;i<3;i++)
+//                {
+//                    memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+//                    memcpy(&Config1_2_c0.LegPee[swingID[i]*3],&swLegPee2c0[i*3],sizeof(double)*3);// only update for three swing legs
+//                }
+
+//                isStepFinished=true;
+//                break;
+//             default:
+//                break;
+//            }
+
+
+//            // cout<<"force state"<<endl;
+//            //cout<<gaitforcestate<<endl;
         }
 
 
@@ -787,24 +814,6 @@ void GaitGenerator::slopeGetNextConfig(aris::dynamic::Model &model,const double 
     // TRaj
 
     RobotConfig  config_2_b0;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2415,9 +2424,16 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     //        pos[1]=-0.85;
     pos[1]+=0.04;
 
-    rt_printf("From planner: terrain height for swing leg from vision %f\n",pos[1]);
+    rt_printf("From planner: terrain height for swing leg from vision, grid %d %d, elevation %f\n",grid[0],grid[1],pos[1]);
+//    rt_printf("grid[0][0]: %f\n",gridMap[0][0]);
+//    rt_printf("grid[0][100]: %f\n",gridMap[0][100]);
+//    rt_printf("grid[0][200]: %f\n",gridMap[0][200]);
+//    rt_printf("grid[100][0]: %f\n",gridMap[100][0]);
+//    rt_printf("grid[200][0]: %f\n",gridMap[200][0]);
+//    rt_printf("grid[100][100]: %f\n",gridMap[100][100]);
 
-    if(pos[1]>-0.6||pos[1]<-1)
+
+    if(pos[1]>-0.5||pos[1]<-1.2)
     {
         rt_printf("impossible terrain height!\n");
         pos[1]=-0.9;
