@@ -92,6 +92,7 @@ struct WalkGaitParams :public aris::server::GaitParamBase
     double h{ 0.08 };
     double a{ 0 };
     double b{ 0 };
+    double l{0};
     int m{GaitMode::Single};
  };
 

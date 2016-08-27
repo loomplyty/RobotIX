@@ -559,8 +559,7 @@
                     <totalCount abbreviation="t" type="int" default="3000"/>
                     <distance abbreviation="d" type="double" default="-0.1"/>
                     <height abbreviation="h" type="double" default="0.05"/>
-                    <alpha abbreviation="a" type="double" default="0"/>
-                    <beta abbreviation="b" type="double" default="0"/>
+                    <lateral abbreviation="l" type="double" default="0"/>
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>
             </gsvf2>
@@ -573,10 +572,12 @@
             </gsf>
             <adj default="adj_param">
                 <adj_param type="unique">
-                    <forward abbreviation="f"/>
-                    <backward abbreviation="b"/>
-                    <left abbreviation="l"/>
-                    <right abbreviation="r"/>
+                    <forward abbreviation="w"/>
+                    <backward abbreviation="x"/>
+                    <turnleft abbreviation="q"/>
+                    <turnright abbreviation="e"/>
+                    <left abbreviation="a"/>
+                    <right abbreviation="d"/>
                     <stop abbreviation="s"/>
                   </adj_param>
             </adj>
