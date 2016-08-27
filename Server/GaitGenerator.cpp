@@ -272,9 +272,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             bodyVelDes=-param.d/param.totalCount*1000;
             if(g.sign(bodyVelDes-bodyVelStart)==0)
-                bodyAcc=0.033;
+                bodyAcc=0.02;
             else
-                bodyAcc=0.033*g.sign(bodyVelDes-bodyVelStart);
+                bodyAcc=0.02*g.sign(bodyVelDes-bodyVelStart);
 
             //param d is negative pointing to -z,dstraight is positive
             double dstraight;
@@ -514,9 +514,13 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 //            else
 //                isStepFinished=false;
 //        }
-        bool isStepForceUsed;
+        static bool isStepForceUsed=false;
         if(stepCount==0)
+        {
             isStepForceUsed=isForceUsed;
+            rt_printf("force usage updated!\n");
+
+        }
 
 
         if(isStepForceUsed==true)
@@ -2628,6 +2632,8 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
 
 
     static double swTD2b0[9];
+
+
 
     if(isForceUsed==false)
     {
