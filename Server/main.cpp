@@ -457,9 +457,9 @@ static auto visionSlopeThread = std::thread([]()
 
         if(info.isInit == true)
         {
-//            kinect2.InitMap();
-//            kinect2.SaveMap();
-//            memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+          //  kinect2.InitMap();
+         //   kinect2.SaveMap();
+          //  memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
 
               //cout<<"map elevation[200][200] in vision thread"<<VersatileGait::gridMap[200][200]<<endl;
             cout<<"map Init"<<endl;
@@ -475,9 +475,9 @@ static auto visionSlopeThread = std::thread([]()
             {
                 cout<<TM_float[i*4]<<" "<<TM_float[i*4+1]<<" "<<TM_float[i*4+2]<<" "<<TM_float[i*4+3]<<" "<<endl;
             }
-//            kinect2.UpdateConMap();
-//            kinect2.SaveMap();
-//            memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+          //  kinect2.UpdateConMap();
+          //  kinect2.SaveMap();
+          //  memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
             cout<<"map update"<<endl;
         }
 

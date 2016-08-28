@@ -160,6 +160,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     //  static double bodyVelEnd[2];
     static double bodyAcc[2];
     static double bodyVelDes[2];
+    static double bodyVelDes_2_c[2];
 
     switch(gaitState)
     {
@@ -270,7 +271,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
 
             // 2.set walking params in c0 coordinate system
-            double bodyVelDes_2_c[2];
             bodyVelDes_2_c[0]=-param.d/param.totalCount*1000;
             bodyVelDes_2_c[1]=-param.l/param.totalCount*1000;
 
@@ -300,7 +300,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             rt_printf("c displacement for this step forward: %f, left: %f\n",dstraight,lstraight);
 
-            // first, use only the current ground, in which c0  coicide with the assumd ground
+           // first, use only the current ground, in which c0  coicide with the assumd ground
             //body velocity
 
             \
@@ -319,7 +319,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             //rt_printf("isVisionUsed:%d\n",int(isVisionUsed));
 
-            //   second, could get vision to TM_visTerran_2_c0//////////////////////////////////////
+            ////   second, could get vision to TM_visTerran_2_c0//////////////////////////////////////
 
             // this only differenct between vision and noraml is the pitch and roll between c1 and c0
             if(isVisionUsed==true)
@@ -692,7 +692,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         //        dDist=0;
         //        dAngle=0;
         gaitState=GaitState::None;
-        memcpy(bodyVelStart,bodyVelDes,sizeof(double)*2);
+        memcpy(bodyVelStart,bodyVelDes_2_c,sizeof(double)*2);//need turn and update
         rt_printf("step end\n");
         stepNumFinished=0;
         return 0;
@@ -1501,32 +1501,32 @@ void parseAdjustSlope(const std::string &cmd, const std::map<std::string, std::s
     {
         if(i.first =="forward")
         {
-            dDist+=0.02;
+            dDist+=0.04;
             break;
         }
         else if (i.first == "backward")
         {
-            dDist-=0.02;
+            dDist-=0.04;
             break;
         }
         else if(i.first =="turnleft")
         {
-            dAngle+=0.02;
+            dAngle+=0.04;
             break;
         }
         else if (i.first == "turnright")
         {
-            dAngle-=0.02;
+            dAngle-=0.04;
             break;
         }
         else if(i.first =="left")
         {
-            dLateral+=0.02;
+            dLateral+=0.04;
             break;
         }
         else if (i.first == "right")
         {
-            dLateral-=0.02;
+            dLateral-=0.04;
             break;
         }
         else if (i.first == "stop")
@@ -3066,7 +3066,7 @@ void GaitGenerator::GetBodyOffset(const double pitch, const double roll, double*
     double Roll=asin(sin(roll));
     // only for test
     offset[0]=0.9*sin(Roll);
-    offset[1]=0.03;
+    offset[1]=0.0;
     offset[2]=-0.9*sin(pitch);
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)
