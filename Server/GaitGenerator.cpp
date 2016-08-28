@@ -123,13 +123,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
     auto &robot = static_cast<Robots::RobotBase &>(model);
     auto &Param=static_cast<const WalkGaitParams &>(param_in);
+
     WalkGaitParams param;
     memcpy(&param,&Param,sizeof(param));
-    param.d+=-dDist;
-    param.l+=-dLateral;
-    param.b+=dAngle;
-    if(param.count%200==0)
-        rt_printf("d %f , l %f , b %f\n ",param.d,param.l,param.b);
+
+
+
     //param.b+=dAngle;
     static aris::dynamic::FloatMarker beginMak{robot.ground()};
 
@@ -233,9 +232,15 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
         if(stepCount==0) //update vision and imu to update this configuration and compute the next configuration
         {
+            param.d+=-dDist;
+            param.l+=-dLateral;
+            param.b+=dAngle;
 
-            rt_printf("a new step begins...swingID %d %d %d\n",swingID[0],swingID[1],swingID[2]);
-            rt_printf("walk d %f,walk lateral %f, walk b %f \n",param.d,param.l,param.b);
+             rt_printf("/////////////////current step started!//////////////////////////////\n");
+
+
+             rt_printf("A new step begins...swingID %d %d %d\n",swingID[0],swingID[1],swingID[2]);
+             rt_printf("Param!!!!!!walk d %f,walk lateral %f, walk b %f \n",param.d,param.l,param.b);
 
             double euler[3];
             if(isIMUUsed==true)
@@ -277,11 +282,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             bodyAcc[1]=(bodyVelDes[1]-bodyVelStart[1])/t_spend;
 
 
+
             rt_printf("stance count %d\n",stanceCount);
             //rt_printf("bodyVelDes_2_c  %f %f, vel end %f %f\n",bodyVelStart[0],bodyVelStart[1],bodyVelDes[0],bodyVelDes[1]);
             rt_printf("vel start  %f %f, vel end %f %f\n",bodyVelStart[0],bodyVelStart[1],bodyVelDes[0],bodyVelDes[1]);
             rt_printf("acc %f %f\n",bodyAcc[0],bodyAcc[1]);
-            rt_printf("\n");
+
 
             //param d is negative pointing to -z,dstraight is positive
             //param l is negative pointing to -x,lstraight is positive
@@ -297,7 +303,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             // first, use only the current ground, in which c0  coicide with the assumd ground
             //body velocity
 
-\
+            \
             double TM_c1_2_c0[16];
             double TM_c0_2_c1[16];
 
@@ -311,21 +317,40 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
             aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
 
-            rt_printf("isVisionUsed:%d\n",int(isVisionUsed));
+            //rt_printf("isVisionUsed:%d\n",int(isVisionUsed));
 
             //   second, could get vision to TM_visTerran_2_c0//////////////////////////////////////
 
             // this only differenct between vision and noraml is the pitch and roll between c1 and c0
             if(isVisionUsed==true)
             {
-                rt_printf("using vision map!!!!!!!!\n");
-                rt_printf("using vision map!!!!!!!!\n");
-                rt_printf("using vision map!!!!!!!!\n");
+                rt_printf("From Vision:using vision map!!!!!!!!\n");
 
-                double terrainTriangle[9]//has some relationship with the kinect installation !!!
-                {0.3,0,-0.7,
-                    -0.3,0,-0.7,
-                    0, 0, -1};
+
+
+                double theta[6];
+                theta[3]=atan(lstraight/dstraight);
+                rt_printf("theta walking direction %f\n",theta[3]);
+                double thetaTM[16];
+                aris::dynamic::s_pe2pm(theta,thetaTM,"213");
+
+
+                double stdTriangle[9] //has some relationship with the kinect installation !!!
+                {0.3,0,0.7,
+                    -0.3,0,0.7,
+                    0, 0, 1};
+                double terrainTriangle[9];
+
+
+
+                aris::dynamic::s_pm_dot_v3(thetaTM,&stdTriangle[0],&terrainTriangle[0]);
+                aris::dynamic::s_pm_dot_v3(thetaTM,&stdTriangle[3],&terrainTriangle[3]);
+                aris::dynamic::s_pm_dot_v3(thetaTM,&stdTriangle[6],&terrainTriangle[6]);
+
+//                for (int i=0;i<3;i++)
+//                    rt_printf("triangle %f %f %f\n",terrainTriangle[i*3],terrainTriangle[i*3+1],terrainTriangle[i*3+2]);
+
+
                 double terrainTriangle_2_c0[9];
                 double TM_b0_2_c0[16];
                 aris::dynamic::s_inv_pm(TM_c0_2_b0,TM_b0_2_c0);
@@ -336,12 +361,13 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 }
                 double est_TM_c1_2_c0[16];
                 //test
-                terrainTriangle_2_c0[1]=0.1;
+                //   terrainTriangle_2_c0[1]=0.1;
                 //
-                g.GetTri2bodyFromTri(terrainTriangle_2_c0,est_TM_c1_2_c0);
+                g.GetTri2bodyFromTri(terrainTriangle_2_c0,param.b,est_TM_c1_2_c0);
                 double est_euler_c1_2_c0[6];
                 aris::dynamic::s_pm2pe(est_TM_c1_2_c0,est_euler_c1_2_c0,"213");
-                est_euler_c1_2_c0[3]=asin(sin(est_euler_c1_2_c0[3]));
+
+                est_euler_c1_2_c0[3]=asin(sin(est_euler_c1_2_c0[3]));//[0,pi/2]
                 est_euler_c1_2_c0[5]=asin(sin(est_euler_c1_2_c0[5]));
 
                 //half the euler angles
@@ -352,15 +378,14 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 c1_2_c0[3]=est_euler_c1_2_c0[3];// should be param.b
                 c1_2_c0[4]=0.5*est_euler_c1_2_c0[4];
                 c1_2_c0[5]=0.5*est_euler_c1_2_c0[5];
-                rt_printf("c1_2_c0 euler angle from vision: %f %f %f\n",est_euler_c1_2_c0[3],est_euler_c1_2_c0[4],est_euler_c1_2_c0[5]);
+                rt_printf("From Vision: c1_2_c0 euler angle from vision: %f (yaw) %f %f\n",est_euler_c1_2_c0[3],est_euler_c1_2_c0[4],est_euler_c1_2_c0[5]);
                 aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
                 aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
-
             }
             ////////////////////***********///////////////vision////////////
-            rt_printf("TM_c1_2_c0\n");
-            for(int i=0;i<4;i++)
-                 rt_printf(" %f %f %f %f\n",TM_c1_2_c0[i*4+0],TM_c1_2_c0[i*4+1],TM_c1_2_c0[i*4+2],TM_c1_2_c0[i*4+3]);
+//            rt_printf("TM_c1_2_c0\n");
+//            for(int i=0;i<4;i++)
+//                rt_printf(" %f %f %f %f\n",TM_c1_2_c0[i*4+0],TM_c1_2_c0[i*4+1],TM_c1_2_c0[i*4+2],TM_c1_2_c0[i*4+3]);
             //stance legs 2 c0
             for(int i=0;i<3;i++)
                 memcpy(&Config1_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);
@@ -417,16 +442,16 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             //            robot.GetPee(Config1_2_b1.LegPee,beginMak);
 
 
-//            cout<<"step infomation"<<endl;
-//            cout<<" Config0_2_c0, body"<<endl;
-//            g.Display(Config0_2_c0.BodyPee,6);
-//            cout<<" Config0_2_c0, leg"<<endl;
-//            g.Display(Config0_2_c0.LegPee,18);
+            //            cout<<"step infomation"<<endl;
+            //            cout<<" Config0_2_c0, body"<<endl;
+            //            g.Display(Config0_2_c0.BodyPee,6);
+            //            cout<<" Config0_2_c0, leg"<<endl;
+            //            g.Display(Config0_2_c0.LegPee,18);
 
-//            cout<<" Config1_2_c0, body"<<endl;
-//            g.Display(Config1_2_c0.BodyPee,6);
-//            cout<<" Config1_2_c0, leg"<<endl;
-//            g.Display(Config1_2_c0.LegPee,18);
+            //            cout<<" Config1_2_c0, body"<<endl;
+            //            g.Display(Config1_2_c0.BodyPee,6);
+            //            cout<<" Config1_2_c0, leg"<<endl;
+            //            g.Display(Config1_2_c0.LegPee,18);
 
             //            cout<<" Config0_2_c0, body"<<endl;
             //            g.Display(Config0_2_c0.BodyPee,6);
@@ -473,7 +498,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         config_2_c0.BodyPee[2]=c_2_c0[2]+s*(Config1_2_c1.BodyPee[2]-Config0_2_c0.BodyPee[2])+Config0_2_c0.BodyPee[2];
         if(stepCount%200==0)
         {
-           // rt_printf("body %f %f %f %f %f %f\n",config_2_c0.BodyPee[0],config_2_c0.BodyPee[1],config_2_c0.BodyPee[2],config_2_c0.BodyPee[3],config_2_c0.BodyPee[4],config_2_c0.BodyPee[5]);
+            // rt_printf("body %f %f %f %f %f %f\n",config_2_c0.BodyPee[0],config_2_c0.BodyPee[1],config_2_c0.BodyPee[2],config_2_c0.BodyPee[3],config_2_c0.BodyPee[4],config_2_c0.BodyPee[5]);
         }
 
 
@@ -512,7 +537,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         if(stepCount==0)
         {
             isStepForceUsed=isForceUsed;
-            rt_printf("force usage updated!\n");
+            //rt_printf("force usage updated!\n");
 
         }
 
@@ -648,6 +673,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             stepNumFinished+=1;
             stepCount=0;
             isStepFinished=false;
+            rt_printf("/////////////////current step finished //////////////////////////////\n");
 
             if (gaitCommand==GaitCommand::Stop)
             {
@@ -663,8 +689,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         return 1;
 
     case GaitState::End:
-//        dDist=0;
-//        dAngle=0;
+        //        dDist=0;
+        //        dAngle=0;
         gaitState=GaitState::None;
         memcpy(bodyVelStart,bodyVelDes,sizeof(double)*2);
         rt_printf("step end\n");
@@ -831,9 +857,9 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
                 rt_printf("using vision map!!!!!!!!\n");
 
                 double terrainTriangle[9]//has some relationship with the kinect installation !!!
-                {0.3,0,-0.7,
-                    -0.3,0,-0.7,
-                    0, 0, -1};
+                {0.3,0,0.7,
+                    -0.3,0,0.7,
+                    0, 0, 1};
                 double terrainTriangle_2_c0[9];
                 double TM_b0_2_c0[16];
                 aris::dynamic::s_inv_pm(TM_c0_2_b0,TM_b0_2_c0);
@@ -843,7 +869,7 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
                     aris::dynamic::s_pm_dot_pnt(TM_b0_2_c0,&terrainTriangle[3*i],&terrainTriangle_2_c0[3*i]);
                 }
                 double est_TM_c1_2_c0[16];
-                g.GetTri2bodyFromTri(terrainTriangle_2_c0,est_TM_c1_2_c0);
+                g.GetTri2bodyFromTri(terrainTriangle_2_c0,0,est_TM_c1_2_c0);//yaw angle assumed to be 0
                 double est_euler_c1_2_c0[6];
                 aris::dynamic::s_pm2pe(est_TM_c1_2_c0,est_euler_c1_2_c0,"213");
                 est_euler_c1_2_c0[3]=asin(sin(est_euler_c1_2_c0[3]));
@@ -1233,13 +1259,13 @@ int GoSlopeByVision2(aris::dynamic::Model &model, const aris::dynamic::PlanParam
     }
 }
 
-void GaitGenerator::GetTri2bodyFromTri( double* Tris,double *TM_C2B)
+void GaitGenerator::GetTri2bodyFromTri( double* Tris,double yaw,double *TM_C2B)
 {
 
 
     double y[3];
     double z[3];
-    double x_prime[3]{1,0,0};
+    double x_prime[3]{cos(yaw),0,-sin(yaw)};
     double x[3];
 
     GetPlaneFromStanceLegs(Tris,y);
@@ -1269,6 +1295,13 @@ void GaitGenerator::GetTri2bodyFromTri( double* Tris,double *TM_C2B)
     TM_C2B[10]=z[2];
     TM_C2B[11]= TriC_origin[2] ;
     TM_C2B[15]=1;
+    double est_euler_c1_2_c0[6];
+    aris::dynamic::s_pm2pe(TM_C2B,est_euler_c1_2_c0,"213");
+
+
+
+
+
 
 }
 
@@ -2987,7 +3020,7 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
     //        pos[1]=-0.85;
     pos[1]+=0.04;
 
-    rt_printf("From planner: terrain height for swing leg from vision, grid %d %d, elevation %f\n",grid[0],grid[1],pos[1]);
+    rt_printf("From vision: terrain height for sw, grid %d %d, elevation %f\n",grid[0],grid[1],pos[1]);
     //    rt_printf("grid[0][0]: %f\n",gridMap[0][0]);
     //    rt_printf("grid[0][100]: %f\n",gridMap[0][100]);
     //    rt_printf("grid[0][200]: %f\n",gridMap[0][200]);
@@ -2998,7 +3031,7 @@ void GaitGenerator::GetTerrainHeight2b( double *pos)
 
     if(pos[1]>-0.5||pos[1]<-1.2)
     {
-        rt_printf("impossible terrain height!\n");
+        rt_printf("From Vision: impossible terrain height!\n");
         pos[1]=-0.9;
 
     }
@@ -3061,9 +3094,10 @@ double GaitGenerator::norm(double *vec)
 
 void GaitGenerator::normalize(double *vec)
 {
-    vec[0]=vec[0]/norm(vec);
-    vec[1]=vec[1]/norm(vec);
-    vec[2]=vec[2]/norm(vec);
+    double Norm=norm(vec);
+    vec[0]=vec[0]/Norm;
+    vec[1]=vec[1]/Norm;
+    vec[2]=vec[2]/Norm;
 }
 int GaitGenerator::sign(double d)
 {

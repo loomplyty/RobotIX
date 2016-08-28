@@ -556,7 +556,7 @@
             </gsv2>
             <gsvf2 default="wks_param">
                 <wks_param type="group">
-                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <totalCount abbreviation="t" type="int" default="2500"/>
                     <distance abbreviation="d" type="double" default="-0.1"/>
                     <height abbreviation="h" type="double" default="0.05"/>
                     <lateral abbreviation="l" type="double" default="0"/>
