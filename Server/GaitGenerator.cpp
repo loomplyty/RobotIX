@@ -13,6 +13,8 @@ namespace VersatileGait
 
 aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe(true);
 atomic_bool isScanningFinished{false};
+atomic_bool isUsingGridMap{false};
+
 float gridMap[400][400];
 const int Leg2Force[6]{0,1,2,3,4,5};
 
@@ -162,66 +164,31 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     static double bodyVelDes[2];
     static double bodyVelDes_2_c[2];
 
+
+
+//    rt_printf("count %d\n",param.count);
+    if(param.count%500==0)
+       // if(isVisionUsed==true)
+        {
+            isScanningFinished==false;
+            static int scanCount=0;
+            scanCount+=1;
+
+            ScanningInfo sendInfo;
+            sendInfo.isInit=(stepNumFinished==0);
+            sendInfo.isInit=true;
+            int a=VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
+            rt_printf("Vision Scanning demand sent....................! size %d\n",a);
+
+        }
+
+
+
+
     switch(gaitState)
     {
     case GaitState::None:
         gaitState=GaitState::Walking;
-        return 1;
-    case GaitState::Scanning:
-        if(isVisionUsed==true)
-        {
-            static int scanCount=0;
-            scanCount+=1;
-            if(scanCount==1)
-            {
-                rt_printf("scanning...\n");
-                //send command and m_nextConfig_2_b0 to vision and get map
-                //receive map and copy it to map
-                //then walk
-                ScanningInfo sendInfo;
-                sendInfo.isInit=(stepNumFinished==0);
-                sendInfo.isInit=true;
-
-                //aris::dynamic::s_pe2pm(g.m_NextConfig_b0.BodyPee,sendInfo.TM,"213");
-                //cout<<"bodyTM in scanning ... "<<endl;
-                //g.Display(g.m_NextConfig_b0.BodyPee,6);
-
-                //            rt_printf("Transformation Matrix sent from gait!\n");
-                //            for(int i=0;i<4;i++)
-                //            {
-                //                rt_printf("%f %f %f %f\n",sendInfo.TM[i*4],sendInfo.TM[i*4+1],sendInfo.TM[i*4+2],sendInfo.TM[i*4+3]);
-                //            }
-
-                rt_printf("isInit %d\n",sendInfo.isInit);
-
-                int a=VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
-                rt_printf("Matrix sent! size %d\n",a);
-            }
-
-
-            if(isScanningFinished==true)
-            {
-                if(gaitCommand==GaitCommand::Stop)
-                {
-                    rt_printf("get ending command\n");
-                    gaitState=GaitState::End;
-                    gaitCommand=GaitCommand::NoCommand;
-                }
-                else
-                {
-                    rt_printf("scanning finished, start walking\n");
-                    rt_printf("grid map test\n");
-                    //rt_printf("elevation: %f\n",gridMap[200][200]);
-                    gaitState=GaitState::Walking;
-                    isScanningFinished=false;
-                    scanCount=0;
-                }
-
-            }
-        }
-        else
-            gaitState=GaitState::Walking;
-
         return 1;
 
     case GaitState::Walking:
@@ -324,6 +291,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             // this only differenct between vision and noraml is the pitch and roll between c1 and c0
             if(isVisionUsed==true)
             {
+                isUsingGridMap==true;
                 rt_printf("From Vision:using vision map!!!!!!!!\n");
 
 
@@ -381,6 +349,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 rt_printf("From Vision: c1_2_c0 euler angle from vision: %f (yaw) %f %f\n",est_euler_c1_2_c0[3],est_euler_c1_2_c0[4],est_euler_c1_2_c0[5]);
                 aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
                 aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
+                isUsingGridMap==false;
             }
             ////////////////////***********///////////////vision////////////
 //            rt_printf("TM_c1_2_c0\n");
@@ -683,7 +652,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             else if(param.m==GaitMode::Single)
                 gaitState=GaitState::End;
             else
-                gaitState=GaitState::Scanning;
+                gaitState=GaitState::Walking;
 
         }
         return 1;

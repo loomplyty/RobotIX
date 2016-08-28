@@ -21,6 +21,8 @@ struct ScanningInfo
 
 extern float gridMap[400][400];
 extern atomic_bool isScanningFinished;
+extern atomic_bool isUsingGridMap;
+
 extern aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe;
 
  enum GaitType
