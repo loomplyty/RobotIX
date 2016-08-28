@@ -6,9 +6,11 @@
 #include <functional>
 #include <cstdint>
 #include <map>
+#include <Robot_Type_III.h>
+
 #include <Robot_Base.h>
 #include <Robot_Gait.h>
-
+#include <Basic_Gait.h>
 
 namespace VersatileGait
 {
@@ -83,9 +85,10 @@ int GoSlopeFast(aris::dynamic::Model &model, const aris::dynamic::PlanParamBase 
 
 struct RobotConfig
 {
+    //here bodypee is mounted on the waist
     double BodyPee[6];
     double LegPee[18];
-};
+ };
 struct WalkGaitParams :public aris::server::GaitParamBase
 {
     std::int32_t totalCount{ 3000 };
@@ -152,6 +155,8 @@ public:
     // useful functions
     void GetTerrainHeight2b( double* pos);
     void GetBodyOffset(const double pitch, const double roll, double* offset);
+    void GetBodyOffsetRobotIX(const double pitch, const double roll, double* offset);
+
     void GetPlaneFromStanceLegs(const double* stanceLegs,double* normalVector);
     void TMbody(const double* bodyP,const double* bodyR,double*tmbody);
     void Trans(const double* trans,double*TM);

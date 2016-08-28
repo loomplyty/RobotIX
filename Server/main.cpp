@@ -9,8 +9,10 @@
 using namespace std;
 
 #include <aris.h>
-#include <Robot_Gait.h>
-#include <Robot_Base.h>
+#include <Basic_Gait.h>
+#include <Robot_Type_III.h>
+//#include <Robot_Gait.h>
+//#include <Robot_Base.h>
 #include <Robot_Type_I.h>
 #include "Vision_Gait0.h"
 #include "Kinect2.h"
@@ -498,7 +500,7 @@ int main(int argc, char *argv[])
     {
         std::cout << "you did not type in robot name, in this case ROBOT-III will start" << std::endl;
         //xml_address = "/usr/Robots/resource/Robot_Type_I/Robot_III/Robot_III.xml";
-        xml_address = "/home/hex/Desktop/RobotVIII/resource/Robot_VIII.xml";
+        xml_address = "/home/hex/Desktop/RobotIX/resource/Robot_IX.xml";
     }
     else if (std::string(argv[1]) == "III")
     {
@@ -517,14 +519,15 @@ int main(int argc, char *argv[])
 
     auto &rs = aris::server::ControlServer::instance();
 
-    rs.createModel<Robots::RobotTypeI>();
+    rs.createModel<Robots::RobotTypeIII>();
     rs.loadXml(xml_address.c_str());
-    rs.addCmd("en", Robots::basicParse, nullptr);
-    rs.addCmd("ds", Robots::basicParse, nullptr);
-    rs.addCmd("hm", Robots::basicParse, nullptr);
-    rs.addCmd("rc", Robots::recoverParse, Robots::recoverGait);
-    rs.addCmd("wk", Robots::walkParse, Robots::walkGait);
-    rs.addCmd("ro", Robots::resetOriginParse, Robots::resetOriginGait);
+    rs.addCmd("en", Robots::Gait::basicParse, nullptr);
+    rs.addCmd("ds", Robots::Gait::basicParse, nullptr);
+    rs.addCmd("hm", Robots::Gait::basicParse, nullptr);
+    rs.addCmd("rc", Robots::Gait::recoverParse, Robots::Gait::recoverGait);
+    rs.addCmd("wk", Robots::Gait::walkParse, Robots::Gait::walkGait);
+    rs.addCmd("ro", Robots::Gait::resetOriginParse, Robots::Gait::resetOriginGait);
+    rs.addCmd("hmsw", Robots::Gait::basicParse, nullptr);
     //    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
     //    rs.addCmd("vwk", visionWalkParse, visionWalk);
     //    rs.addCmd("swk", stopVisionWalkParse, visionWalk);

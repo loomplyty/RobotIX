@@ -123,7 +123,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
     static GaitGenerator g;
 
-    auto &robot = static_cast<Robots::RobotBase &>(model);
+    auto &robot = static_cast<Robots::RobotTypeIII &>(model);
     auto &Param=static_cast<const WalkGaitParams &>(param_in);
 
     WalkGaitParams param;
@@ -146,6 +146,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         isStepFinished=false;
     }
 
+    static double waistStart;
+    static double waistEnd;
     static RobotConfig Config0_2_c0;
     static RobotConfig Config1_2_c0;
     static RobotConfig Config1_2_c1;
@@ -212,29 +214,59 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             double euler[3];
             if(isIMUUsed==true)
-                param.imu_data->toEulBody2Ground(euler,"213");
+                param.imu_data->toEulBody2Ground(euler,"231");
 
-            rt_printf("imu_data:%f %f %f corrected %f\n",euler[0],euler[1],euler[2],asin(sin(euler[2])));
+            rt_printf("231 YAW ROLL PITCH,imu_data:%f %f %f corrected %f %f %f\n",euler[0],euler[1],euler[2],asin(sin(euler[0])),asin(sin(euler[1])),asin(sin(euler[2])));
 
             euler[0]=0;// yaw being zero
+            euler[1]=asin(sin(euler[1]));
             euler[2]=asin(sin(euler[2]));
 
 
-            RobotConfig Config0_2_b0;
-            robot.GetPee(Config0_2_b0.LegPee,robot.body());
 
+            //in this scheduling scheme, the body is set on the waist
+            RobotConfig Config0_2_b0;
+            robot.GetWa(waistStart);
+            double b0_2_s0[6];//"231"
+            memset(b0_2_s0,0,sizeof(double)*6);
+            b0_2_s0[5]=waistStart;
+            double TM_b0_2_s0[16];
+            aris::dynamic::s_pe2pm(b0_2_s0,TM_b0_2_s0,"231");
+            double TM_b0_2_g[16];
+            aris::dynamic::s_pm_dot_pm(*robot.body().pm(),TM_b0_2_s0,TM_b0_2_g);
+            rt_printf("b0_2_s0 %f %f %f %f %f %f\n",b0_2_s0[0],b0_2_s0[1],b0_2_s0[2],b0_2_s0[3],b0_2_s0[4],b0_2_s0[5]);
+
+
+            rt_printf("TM_b0_2_s0\n");
+            for(int i=0;i<4;i++)
+                rt_printf(" %f %f %f %f\n",TM_b0_2_s0[i*4+0],TM_b0_2_s0[i*4+1],TM_b0_2_s0[i*4+2],TM_b0_2_s0[i*4+3]);
+            beginMak.setPrtPm(TM_b0_2_g);
+            beginMak.update();
+
+            robot.GetPee(Config0_2_b0.LegPee,beginMak);
             double TM_c0_2_b0[16];
+           // double TM_bo_2_c0[16];
             g.GetLeg2bodyFromLegs(Config0_2_b0.LegPee,TM_c0_2_b0);
+            //aris::dynamic::s_inv_pm(TM_c0_2_b0,TM_b0_2_c0);
             memset(Config0_2_b0.BodyPee,0,sizeof(double)*6);
-            aris::dynamic::s_pm_dot_pm(*robot.body().pm(),TM_c0_2_b0,TM_c0_2_g);
+            aris::dynamic::s_pm_dot_pm(TM_b0_2_g,TM_c0_2_b0,TM_c0_2_g);
 
             beginMak.setPrtPm(TM_c0_2_g);
             beginMak.update();
-            robot.GetPeb(Config0_2_c0.BodyPee,beginMak,"213");
-            robot.GetPee(Config0_2_c0.LegPee,beginMak);
+            robot.GetPeb(Config0_2_c0.BodyPee,beginMak,"231");
+            Config0_2_c0.BodyPee[5]+=waistStart;
 
-            //            Config0_2_c0.BodyPee[3]=asin(sin(Config0_2_c0.BodyPee[3]));
-            //            Config0_2_c0.BodyPee[5]=asin(sin(Config0_2_c0.BodyPee[5]));
+            robot.GetPee(Config0_2_c0.LegPee,beginMak);
+//            rt_printf("bodyInit 2 c0 %f %f %f %f %f %f\n",Config0_2_c0.BodyPee[0],Config0_2_c0.BodyPee[1],Config0_2_c0.BodyPee[2],Config0_2_c0.BodyPee[3],Config0_2_c0.BodyPee[4],Config0_2_c0.BodyPee[5]);
+
+//            rt_printf("LegPee 2 c0\n");
+//            for(int i=0;i<6;i++)
+//            {
+//                rt_printf("%f %f %f\n",Config0_2_c0.LegPee[3*i],Config0_2_c0.LegPee[3*i+1],Config0_2_c0.LegPee[3*i+2]);
+
+//            }
+            //       Config0_2_c0.BodyPee[3]=asin(sin(Config0_2_c0.BodyPee[3]));
+            //       Config0_2_c0.BodyPee[5]=asin(sin(Config0_2_c0.BodyPee[5]));
 
 
             // 2.set walking params in c0 coordinate system
@@ -336,6 +368,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 aris::dynamic::s_pm2pe(est_TM_c1_2_c0,est_euler_c1_2_c0,"213");
 
                 est_euler_c1_2_c0[3]=asin(sin(est_euler_c1_2_c0[3]));//[0,pi/2]
+                est_euler_c1_2_c0[4]=asin(sin(est_euler_c1_2_c0[4]));//[0,pi/2]
                 est_euler_c1_2_c0[5]=asin(sin(est_euler_c1_2_c0[5]));
 
                 //half the euler angles
@@ -374,18 +407,17 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             }
 
 
-            // body 2 c0
+            // body 2 c0  -->ok for RobotIX
             double body_2_c1[6];
             double body_2_c0[6];
             double bodyOffset[3];
-            g.GetBodyOffset(euler[1],euler[2],bodyOffset);
+            g.GetBodyOffsetRobotIX(euler[2],euler[1],bodyOffset);//here use the last imu value to adjust body , or else use the next imu value to do this.
             body_2_c1[0]=0+bodyOffset[0];//+offset
             body_2_c1[1]=-stdLegPee2B[1]+bodyOffset[1];//0.85+offset
             body_2_c1[2]=0+bodyOffset[2];//+offset
             body_2_c1[3]=0;
             body_2_c1[4]=0;
             body_2_c1[5]=0;
-
 
 
             aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,body_2_c1,body_2_c0);
@@ -395,10 +427,50 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             memcpy(&Config1_2_c0.BodyPee,body_2_c0,sizeof(double)*6);
 
 
+            //waist
+//            double absb0_2_g[16];
+//            double b0_2_g[6];
+//            memcpy(&Euler0_2_g[3],euler,sizeof(double)*3);//231 euler angles
+//            aris::dynamic::s_pe2pm(Euler0_2_g,absb0_2_g,"231");
+
+
+            double b0_2_g0[6];
+            b0_2_g0[3]=0;
+            b0_2_g0[4]=euler[1];
+            b0_2_g0[5]=euler[2]-waistStart;
+
+            double TM_b0_2_g0[16];
+            double TM_c0_2_g0[16];
+            double TM_c1_2_g0[16];
+            aris::dynamic::s_pe2pm(b0_2_g0,TM_b0_2_g0,"231");
+            aris::dynamic::s_pm_dot_pm(TM_b0_2_g0,TM_c0_2_b0,TM_c0_2_g0);
+            aris::dynamic::s_pm_dot_pm(TM_c0_2_g0,TM_c1_2_c0,TM_c1_2_g0);
+
+            double b1_2_g0[6];
+
+            aris::dynamic::s_pm2pe(TM_c1_2_g0,b1_2_g0,"231");
+
+            waistEnd=asin(sin(b1_2_g0[5]));
+
+
             //compute config 2 c1 ###
 
             memcpy(Config1_2_c1.BodyPee,body_2_c1,sizeof(double)*6);
             g.LegsTransform(Config1_2_c0.LegPee,TM_c0_2_c1,Config1_2_c1.LegPee);
+
+
+
+            rt_printf("bodyEnd 2 c0 %f %f %f %f %f %f\n",Config1_2_c0.BodyPee[0],Config1_2_c0.BodyPee[1],Config1_2_c0.BodyPee[2],Config1_2_c0.BodyPee[3],Config1_2_c0.BodyPee[4],Config1_2_c0.BodyPee[5]);
+
+            rt_printf("LegPeeEnd 2 c0\n");
+            for(int i=0;i<6;i++)
+            {
+                rt_printf("%f %f %f\n",Config1_2_c0.LegPee[3*i],Config1_2_c0.LegPee[3*i+1],Config1_2_c0.LegPee[3*i+2]);
+
+            }
+            rt_printf("waist Angle %f\n",waistStart);
+
+            rt_printf("waist End %f\n",waistEnd);
 
             //            double TM_b1_2_c0[16];
             //            double TM_b1_2_g[16];
@@ -434,9 +506,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
         //generate trajectory for each ms
 
-
-
         RobotConfig config_2_c0;
+        double waistAngle;
         //bodypee 2 c0
         double s;
         s=(1-cos(double(stepCount+1)/stanceCount*PI))/2;
@@ -453,6 +524,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         {
             config_2_c0.BodyPee[i]=body0_2_c0[i]+s*(body1_2_c0[i]-body0_2_c0[i]);
         }
+        waistAngle=waistStart+s*(waistEnd-waistStart);
         double t;
         t=double(stepCount+1)/1000;
 
@@ -586,6 +658,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         }
 
 
+
         for (int i=0;i<3;i++)
         {
             memcpy(&config_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);//stancelegs are ok
@@ -626,8 +699,13 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         //        robot.GetPeb(Config0_2_c0.BodyPee,beginMak,"213");
         //        robot.GetPee(Config0_2_c0.LegPee,beginMak);
 
+        double bodyPeeForRobotIX[6];
+        memcpy(bodyPeeForRobotIX,config_2_c0.BodyPee,sizeof(double)*6);
+        bodyPeeForRobotIX[5]-=waistAngle;
+
+        robot.SetPeb(bodyPeeForRobotIX,beginMak,"231");
+        robot.SetWa(waistAngle);
         robot.SetPee(config_2_c0.LegPee,beginMak);
-        robot.SetPeb(config_2_c0.BodyPee,beginMak,"213");
 
         stepCount+=1;
 
@@ -3037,6 +3115,15 @@ void GaitGenerator::GetBodyOffset(const double pitch, const double roll, double*
     offset[0]=0.9*sin(Roll);
     offset[1]=0.0;
     offset[2]=-0.9*sin(pitch);
+}
+void GaitGenerator::GetBodyOffsetRobotIX(const double pitch, const double roll, double* offset)
+{
+
+    double Roll=asin(sin(roll));
+    // only for test
+    offset[0]=0.9*sin(Roll);
+    offset[1]=0.0;
+    offset[2]=-0.9*sin(pitch);// not sure depend on robot elevation
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)
 {
