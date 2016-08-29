@@ -206,6 +206,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         stepNumFinished=0;
         stepCount=0;
         isStepFinished=false;
+        dDist=0;
+        dAngle=0;
+        dLateral=0;
     }
 
     static double waistStart;
@@ -237,6 +240,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     //if(param.count%10==0)
     // if(isVisionUsed==true)
 
+
+    //sending for map update
     if(FlagV==FlagVision::Free)
     {
 
@@ -249,6 +254,14 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
         else
             rt_printf("vision is scanning ,could not update...........................................................\n");
+    }
+    if(param.count%100==0)
+    {
+        rt_printf("flag %d\n",FlagV);
+        rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
+
+        rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
+
     }
 
 
@@ -730,7 +743,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 for(int i=0;i<3;i++)
                 {
                     swLegPee2c0[3*i]=Config1_2_c0.LegPee[3*swingID[i]];
-                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.07;//y direction enlong
+                    swLegPee2c0[3*i+1]=Config1_2_c0.LegPee[3*swingID[i]+1]-new_s*0.055;//y direction enlong
                     swLegPee2c0[3*i+2]=Config1_2_c0.LegPee[3*swingID[i]+2];
                 }
                 //memcpy(config_2_c0.BodyPee,Config1_2_c0.BodyPee,sizeof(double)*6);

@@ -454,32 +454,35 @@ static auto visionSlopeThread = std::thread([]()
     {
         VersatileGait::ScanningInfo info;
         VersatileGait::visionSlopePipe.recvInNrt(info);
-       // cout<<"matrix received!"<<endl;
+        // cout<<"planner demanding received!"<<endl;
 
         if(info.isInit == true)
         {
-          //  kinect2.InitMap();
-         //   kinect2.SaveMap();
+            kinect2.InitMap();
+            kinect2.SaveMap();
             VersatileGait::FlagV=VersatileGait::FlagVision::VisionScanning;
+
             memcpy(VersatileGait::gridMapBuff,kinect2.visData.gridMap,sizeof(float)*400*400);
+
+            // rt_printf("map buffer is (in vision thread): %f %f\n",VersatileGait::gridMapBuff[200][200],VersatileGait::gridMapBuff[300][200]);
+
             VersatileGait::FlagV=VersatileGait::FlagVision::Free;
 
-              //cout<<"map elevation[200][200] in vision thread"<<VersatileGait::gridMap[200][200]<<endl;
-           // cout<<"map Init"<<endl;
+            //cout<<"map elevation[200][200] in vision thread"<<VersatileGait::gridMap[200][200]<<endl;
         }
         else
         {
             float TM_float[16];
             for(int i=0;i<16;i++)
                 TM_float[i]=float(info.TM[i]);
-          //  kinect2.GetPose(TM_float);
+            kinect2.GetPose(TM_float);
             cout<<"Transformation Matrix got in Vision!"<<endl;
             for(int i=0;i<4;i++)
             {
                 cout<<TM_float[i*4]<<" "<<TM_float[i*4+1]<<" "<<TM_float[i*4+2]<<" "<<TM_float[i*4+3]<<" "<<endl;
             }
-          //  kinect2.UpdateConMap();
-          //  kinect2.SaveMap();
+            kinect2.UpdateConMap();
+            kinect2.SaveMap();
 
             VersatileGait::FlagV=VersatileGait::FlagVision::VisionScanning;
             memcpy(VersatileGait::gridMapBuff,kinect2.visData.gridMap,sizeof(float)*400*400);
@@ -487,7 +490,7 @@ static auto visionSlopeThread = std::thread([]()
             //cout<<"map update"<<endl;
         }
 
-      //  cout<<" map recorded to shared memory"<<endl;
+        //  cout<<" map recorded to shared memory"<<endl;
         VersatileGait::isScanningFinished = true;
     }
 });
@@ -495,7 +498,7 @@ static auto visionSlopeThread = std::thread([]()
 
 int main(int argc, char *argv[])
 {
-   // kinect2.Start();
+    kinect2.Start();
 
     VersatileGait::startLogDataThread();
     std::string xml_address;
@@ -532,21 +535,21 @@ int main(int argc, char *argv[])
     rs.addCmd("wk", Robots::Gait::walkParse, Robots::Gait::walkGait);
     rs.addCmd("ro", Robots::Gait::resetOriginParse, Robots::Gait::resetOriginGait);
     rs.addCmd("hmsw", Robots::Gait::basicParse, nullptr);
-    rs.addCmd("ec",Robots::Gait::extendChainParse,Robots::Gait::extendChainGait);   
-//wasit    
-rs.addCmd("rcw",Robots::Gait::recoverWaistParse,Robots::Gait::recoverWaistGait);
-rs.addCmd("aw",Robots::Gait::adjustWaistParse,Robots::Gait::adjustWaistGait);    
-//    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
+    rs.addCmd("ec",Robots::Gait::extendChainParse,Robots::Gait::extendChainGait);
+    //wasit
+    rs.addCmd("rcw",Robots::Gait::recoverWaistParse,Robots::Gait::recoverWaistGait);
+    rs.addCmd("aw",Robots::Gait::adjustWaistParse,Robots::Gait::adjustWaistGait);
+    //    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
     //    rs.addCmd("vwk", visionWalkParse, visionWalk);
     //    rs.addCmd("swk", stopVisionWalkParse, visionWalk);
 
     //slope walking
-     rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVisionFast2);
+    rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVisionFast2);
     rs.addCmd("frc",VersatileGait::parseForce,VersatileGait::GoSlopeByVisionFast2);
     rs.addCmd("imu",VersatileGait::parseIMU,VersatileGait::GoSlopeByVisionFast2);
     rs.addCmd("vis",VersatileGait::parseVision,VersatileGait::GoSlopeByVisionFast2);
 
-     rs.addCmd("gsvf2",VersatileGait::parseGoSlopeVisionFast2,VersatileGait::GoSlopeByVisionFast2);
+    rs.addCmd("gsvf2",VersatileGait::parseGoSlopeVisionFast2,VersatileGait::GoSlopeByVisionFast2);
 
     rs.open();
 
