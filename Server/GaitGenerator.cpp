@@ -861,7 +861,10 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             int legPhase[6];
             memset(legPhase,0,sizeof(int)*6);
             for(int i=0;i<3;i++)
+            {
                 legPhase[swingID[i]]=int(isTD[i]==true);
+                legPhase[stanceID[i]]=1;
+            }
             memcpy(data.legPhase,legPhase,sizeof(int)*6);
             //force
             for(int i=0;i<6;i++)
