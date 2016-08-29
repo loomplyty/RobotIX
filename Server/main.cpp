@@ -532,7 +532,11 @@ int main(int argc, char *argv[])
     rs.addCmd("wk", Robots::Gait::walkParse, Robots::Gait::walkGait);
     rs.addCmd("ro", Robots::Gait::resetOriginParse, Robots::Gait::resetOriginGait);
     rs.addCmd("hmsw", Robots::Gait::basicParse, nullptr);
-    //    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
+    rs.addCmd("ec",Robots::Gait::extendChainParse,Robots::Gait::extendChainGait);   
+//wasit    
+rs.addCmd("rcw",Robots::Gait::recoverWaistParse,Robots::Gait::recoverWaistGait);
+rs.addCmd("aw",Robots::Gait::adjustWaistParse,Robots::Gait::adjustWaistGait);    
+//    rs.addCmd("ca", visionCalibrateParse, visionCalibrate);
     //    rs.addCmd("vwk", visionWalkParse, visionWalk);
     //    rs.addCmd("swk", stopVisionWalkParse, visionWalk);
 

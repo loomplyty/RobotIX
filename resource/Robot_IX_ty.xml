@@ -20,7 +20,7 @@
             <S2jpe type="matrix">{ 0, 0,      0,     0, -PI / 2, 0 }</S2jpe>
             <S3ipe type="matrix">{ 0, 0.059, -0.034, 0, -PI / 2, 0 }</S3ipe>
             <S3jpe type="matrix">{ 0, 0,      0,     0, -PI / 2, 0 }</S3jpe>
-            <Sfipe type="matrix">{ 0.1097, 0.0093, 0, 0, 0, 0 }</Sfipe>
+            <Sfipe type="matrix">{ 0.065, 0, 0, 0, 0, 0 }</Sfipe>
             <Sfjpe type="matrix">{ 0,   0, 0, 0, 0, 0 }</Sfjpe>
             <LFpe type="matrix">{-0.07288 , 0 ,  0.0732,  PI/2,  PI* 5/6,   -PI/2-PI*75/180}</LFpe>
             <LMpe type="matrix">{-0.12661 , 0 ,  0,       PI/2,  PI* 6/6,   -PI/2-PI*75/180}</LMpe>
@@ -607,7 +607,6 @@
                 <leg abbreviation="l" type="intArray" default="0"/>
             </hmsw>
             <fake_home/>
-            <zo/>
             <rc default="rc_param">
                 <rc_param type="group">
                     <leg_param type="unique" default="all">
@@ -619,7 +618,6 @@
                     <t1 abbreviation="t" type="intArray" default="3000"/>
                     <t2 type="intArray" default="3000"/>
                     <margin_offset abbreviation="m" type="double" default="0.01"/>
-                    <require_zero abbreviation="z" type="int" default="0"/>
                 </rc_param>
             </rc>
             <wk default="wk_param">
@@ -652,115 +650,26 @@
                     <angle abbreviation="a" type="double" default="0"/>
                 </aw_param>
             </aw>
-            <swk default="swk_param">
-                <swk_param type="group">
+            <gsv default="wks_param">
+                <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
-                    <n abbreviation="n" type="int" default="1"/>
-                    <distance abbreviation="d" type="double" default="0.5"/>
-                    <height abbreviation="h" type="double" default="0.05"/>
+                    <distance abbreviation="d" type="double" default="-0.1"/>
+                    <height abbreviation="h" type="double" default="0.08"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>
-                    <offset abbreviation="o" type="double" default="0"/>
-                </swk_param>
-            </swk>
-            <mwr>
-                <mwr_param type="group">
-                    <u abbreviation="u" type="double" default="0"/>
-                    <v abbreviation="v" type="double" default="0"/>
-                    <w abbreviation="w" type="double" default="0"/>
-                    <roll abbreviation="r" type="double" default="0"/>
-                    <pitch abbreviation="p" type="double" default="0"/>
-                    <yaw abbreviation="y" type="double" default="0"/>
-                    <totalCount abbreviation="t" type="double" default="3000"/>
-                </mwr_param>
-            </mwr>
-            <fsw default="fsw_param">
-                <fsw_param type="group">
-                    <n abbreviation="n" type="int" default="1"/>
-                </fsw_param>
-            </fsw>
-            <ffd>
-                <ffd_param type="group">
+                    <mode abbreviation="m" type="int" default="1"/>
+                  </wks_param>
+            </gsv>
+            <gsv2 default="wks_param">
+                <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
-                    <n abbreviation="n" type="int" default="1"/>
-                    <distance abbreviation="d" type="double" default="0.5"/>
+                    <distance abbreviation="d" type="double" default="-0.1"/>
                     <height abbreviation="h" type="double" default="0.05"/>
                     <alpha abbreviation="a" type="double" default="0"/>
                     <beta abbreviation="b" type="double" default="0"/>
-                </ffd_param>
-            </ffd>
-            <jfw>
-                <jfw_param type="group">
-                    <state_param type="unique">
-                        <init abbreviation="i"/>
-                        <acc abbreviation="a" type="double" default="0"/>
-                        <stop abbreviation="s"/>
-                    </state_param>
-                    <totalCount abbreviation="t" type="int" default="1000"/>
-                    <height abbreviation="h" type="double" default="0.05"/>
-                    <beta abbreviation="b" type="double" default="0"/>
-                </jfw_param>
-            </jfw>
-            <fcw>
-                <fcw_param type="group">
-                    <state_param type="unique">
-                        <init abbreviation="i"/>
-                        <forwardAcc abbreviation="f" type="double" default="0"/>
-                        <betaAcc abbreviation="b" type="double" default="0"/>
-                        <stop abbreviation="s"/>
-                    </state_param>
-                    <totalCount abbreviation="t" type="int" default="1000"/>
-                    <height abbreviation="h" type="double" default="0.05"/>
-                    <roll abbreviation="r" type="double" default="0"/>
-                    <pitch abbreviation="p" type="double" default="0"/>
-                    <alpha abbreviation="a" type="double" default="0"/>
-                </fcw_param>
-            </fcw>
-            <cmb>
-                <cmb_param type="group">
-                    <u abbreviation="u" type="double" default="0"/>
-                    <v abbreviation="v" type="double" default="0"/>
-                    <w abbreviation="w" type="double" default="0"/>
-                    <roll abbreviation="r" type="double" default="0"/>
-                    <pitch abbreviation="p" type="double" default="0"/>
-                    <yaw abbreviation="y" type="double" default="0"/>
-                </cmb_param>
-            </cmb>
-            <cmj>
-                <cmj_param type="group">
-                    <isStop abbreviation="s" type="int" default="0"/>
-                    <isForce abbreviation="f" type="int" default="0"/>
-                    <u abbreviation="u" type="int" default="0"/>
-                    <v abbreviation="v" type="int" default="0"/>
-                    <w abbreviation="w" type="int" default="0"/>
-                    <roll abbreviation="r" type="int" default="0"/>
-                    <pitch abbreviation="p" type="int" default="0"/>
-                    <yaw abbreviation="y" type="int" default="0"/>
-                </cmj_param>
-            </cmj>
-            <odb>
-                <odb_param type="group">
-                    <u abbreviation="u" type="double" default="0"/>
-                    <v abbreviation="v" type="double" default="0"/>
-                    <w abbreviation="w" type="double" default="0"/>
-                    <roll abbreviation="r" type="double" default="0"/>
-                    <pitch abbreviation="p" type="double" default="0"/>
-                    <yaw abbreviation="y" type="double" default="0"/>
-                </odb_param>
-            </odb>
-            <odj>
-                <odj_param type="group">
-                    <isPull abbreviation="i" type="int" default="1"/>
-                    <isStop abbreviation="s" type="int" default="0"/>
-                    <isConfirm abbreviation="c" type="int" default="0"/>
-                    <u abbreviation="u" type="int" default="0"/>
-                    <v abbreviation="v" type="int" default="0"/>
-                    <w abbreviation="w" type="int" default="0"/>
-                    <roll abbreviation="r" type="int" default="0"/>
-                    <pitch abbreviation="p" type="int" default="0"/>
-                    <yaw abbreviation="y" type="int" default="0"/>
-                </odj_param>
-            </odj>
+                    <mode abbreviation="m" type="int" default="1"/>
+                  </wks_param>
+            </gsv2>
             <gsvf2 default="wks_param">
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="2500"/>
@@ -806,6 +715,21 @@
                     <closed abbreviation="c"/>
                   </vis_param>
             </vis>
+            <vwk/>
+            <swk/>
+            <ca/>
+            <gsh default="wks_param">
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="-0.1"/>
+                    <height abbreviation="h" type="double" default="0.05"/>
+                    <alpha abbreviation="a" type="double" default="0"/>
+                    <beta abbreviation="b" type="double" default="0"/>
+                    <dpitch abbreviation="p" type="double" default="0"/>
+                    <droll abbreviation="r" type="double" default="0"/>
+                </wks_param>
+            </gsh>
+            <zo/>
         </Commands>
     </Server>
     <Controller>
@@ -882,7 +806,7 @@
                 </EK1122>
             </SlaveType>
             <Slave>
-                <Motion1  type="ElmoSoloWhistle" min_pos="0.738" max_pos="1.128" max_vel="0.9481" home_pos="0.738" input2count="11556181" kp="200" abs_id="11"/>
+                <Motion1  type="ElmoSoloWhistle" min_pos="0.738" max_pos="1.128" max_vel="0.9481" home_pos="0.738" input2count="11556181" kp="120" abs_id="11"/>
                 <Motion2  type="ElmoSoloWhistle" min_pos="0.722" max_pos="1.112" max_vel="0.9481" home_pos="0.722" input2count="11556181" kp="200" abs_id="9"/>
                 <Motion3  type="ElmoSoloWhistle" min_pos="0.738" max_pos="1.128" max_vel="0.9481" home_pos="0.738" input2count="11556181" kp="200" abs_id="10"/>
                 <Motion4  type="ElmoSoloWhistle" min_pos="0.738" max_pos="1.128" max_vel="0.9481" home_pos="0.738" input2count="11556181" kp="200" abs_id="14"/>
@@ -900,22 +824,22 @@
                 <Motion16 type="ElmoSoloWhistle" min_pos="0.738" max_pos="1.128" max_vel="0.9481" home_pos="0.738" input2count="11556181" kp="200" abs_id="2"/>
                 <Motion17 type="ElmoSoloWhistle" min_pos="0.722" max_pos="1.112" max_vel="0.9481" home_pos="0.722" input2count="11556181" kp="200" abs_id="0"/>
                 <Motion18 type="ElmoSoloWhistle" min_pos="0.738" max_pos="1.128" max_vel="0.9481" home_pos="0.738" input2count="11556181" kp="200" abs_id="1"/>
-                <Motion19 type="ElmoSoloWhistle" min_pos="0.125" max_pos="0.358" max_vel="0.9481" home_pos="0.246" input2count="86671360" kp="200" abs_id="18" hm_with_switch="1"/>
+                <Motion19 type="ElmoSoloWhistle" min_pos="0.125" max_pos="0.358" max_vel="0.9481" home_pos="0.246" input2count="86671360" kp="200" abs_id="18"/>
                 <SlaveStation1 type="EK1100" />
                 <Junction1 type="EK1122" />
-                <ForceSensor1 type="AtiForceSensor" abs_id="5"/>
-                <ForceSensor2 type="AtiForceSensor" abs_id="3"/>
+                <ForceSensor1 type="AtiForceSensor" abs_id="3"/>
+                <ForceSensor2 type="AtiForceSensor" abs_id="2"/>
                 <Junction2 type="EK1122" />
                 <ForceSensor3 type="AtiForceSensor" abs_id="4"/>
-                <ForceSensor4 type="AtiForceSensor" abs_id="1"/>
+                <ForceSensor4 type="AtiForceSensor" abs_id="0"/>
                 <Junction3 type="EK1122" />
-                <ForceSensor5 type="AtiForceSensor" abs_id="2"/>
-                <ForceSensor6 type="AtiForceSensor" abs_id="0"/>
+                <ForceSensor5 type="AtiForceSensor" abs_id="5"/>
+                <ForceSensor6 type="AtiForceSensor" abs_id="1"/>
             </Slave>
         </EtherCat>
     </Controller>
     <Sensors>
-         <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,PI,PI/2,3*PI/2}" PeImu2Body="{0,0,0,0,PI/2,PI/2}"/>
+        <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,PI,PI/2,3*PI/2}" PeImu2Body="{0,0,0,0,PI/2,PI/2}"/>
     </Sensors>
-    <UDP remote_ip="192.168.1.102" remote_port="6661" local_port="6660"/>
+    <UDP remote_ip="192.168.1.101" remote_port="6661" local_port="6660"/>
 </RobotIX>

@@ -21,12 +21,12 @@ float gridMapBuff[400][400]{-0.9};
 const int Leg2Force[6]{0,1,2,3,4,5};
 
 const double stdLegPee2B[18]=
-{  -0.3,-0.9,-0.55,
-   -0.45,-0.9,0,
-   -0.3,-0.9,0.55,
-   0.3,-0.9,-0.55,
-   0.45,-0.9,0,
-   0.3,-0.9,0.55
+{  -0.3,-0.95,-0.55,
+   -0.45,-0.95,0,
+   -0.3,-0.95,0.55,
+   0.3,-0.95,-0.55,
+   0.45,-0.95,0,
+   0.3,-0.95,0.55
 };//change 0.85 to std offset height
 
 const double stdLegPee2C[18]=
@@ -457,7 +457,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 c1_2_c0[4]=0.5*est_euler_c1_2_c0[4];
                 c1_2_c0[5]=0.5*est_euler_c1_2_c0[5];
 
-                c1_2_c0[5]=0.1;
                 aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"231");
                 rt_printf("From Vision: c1_2_c0 euler angle from vision 231: %f (yaw) %f %f\n",c1_2_c0[3],c1_2_c0[4],c1_2_c0[5]);
 
@@ -1731,7 +1730,7 @@ void GaitGenerator::GetBodyOffsetRobotIX(const double pitch, const double roll, 
     // only for test
     offset[0]=-stdLegPee2B[1]*sin(roll);
     offset[1]=0.0;
-    offset[2]=-stdLegPee2B[1]*tan(pitch);// not sure depend on robot elevation
+    offset[2]=stdLegPee2B[1]*tan(pitch);// not sure depend on robot elevation
     rt_printf("offset %f %f %f\n",offset[0],offset[1],offset[2]);
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)
