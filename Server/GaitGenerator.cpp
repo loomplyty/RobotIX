@@ -168,6 +168,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     static double bodyAcc[2];
     static double bodyVelDes[2];
     static double bodyVelDes_2_c[2];
+ //   static double HeightAdj_c1_2_c0;
 
 
 
@@ -322,6 +323,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
             aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
 
+
             //rt_printf("isVisionUsed:%d\n",int(isVisionUsed));
 
             ////   second, could get vision to TM_visTerran_2_c0//////////////////////////////////////
@@ -389,7 +391,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 c1_2_c0[0]=lstraight;//x
                 c1_2_c0[1]=0;
                 c1_2_c0[2]=dstraight;
-                c1_2_c0[3]=est_euler_c1_2_c0[3];// should be param.b
+                c1_2_c0[3]=est_euler_c1_2_c0[3];// euqals to param.b
                 c1_2_c0[4]=0.5*est_euler_c1_2_c0[4];
                 c1_2_c0[5]=0.5*est_euler_c1_2_c0[5];
 
@@ -406,9 +408,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             }
             ////////////////////***********///////////////vision////////////
-//            rt_printf("TM_c1_2_c0\n");
-//            for(int i=0;i<4;i++)
-//                rt_printf(" %f %f %f %f\n",TM_c1_2_c0[i*4+0],TM_c1_2_c0[i*4+1],TM_c1_2_c0[i*4+2],TM_c1_2_c0[i*4+3]);
+            rt_printf("TM_c1_2_c0\n");
+            for(int i=0;i<4;i++)
+                rt_printf(" %f %f %f %f\n",TM_c1_2_c0[i*4+0],TM_c1_2_c0[i*4+1],TM_c1_2_c0[i*4+2],TM_c1_2_c0[i*4+3]);
             //stance legs 2 c0
             for(int i=0;i<3;i++)
                 memcpy(&Config1_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);
@@ -420,9 +422,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             for(int i=0;i<3;i++)
             {
                 memcpy(&SW_2_c1[i*3],&stdLegPee2C[swingID[i]*3],sizeof(double)*3);
-                SW_2_c1[i*3]=SW_2_c1[i*3];
+                SW_2_c1[i*3]=SW_2_c1[i*3]+lstraight/2;
                 SW_2_c1[i*3+1]=SW_2_c1[i*3+1];
-                SW_2_c1[i*3+2]=SW_2_c1[i*3+2]-param.d/2;
+                SW_2_c1[i*3+2]=SW_2_c1[i*3+2]+dstraight/2;
                 aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,&SW_2_c1[i*3],&SW_2_c0[i*3]);
                 memcpy(&Config1_2_c0.LegPee[swingID[i]*3],&SW_2_c0[i*3],sizeof(double)*3);
             }
@@ -468,6 +470,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             body_2_c0[4]=c1_2_c0[4];
             body_2_c0[5]=c1_2_c0[5];
             memcpy(&Config1_2_c0.BodyPee,body_2_c0,sizeof(double)*6);
+            //c1 height adj to c0
+           // HeightAdj_c1_2_c0=0;
 
 
 
@@ -617,6 +621,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
 
 
+
         //using force
         static double swTD_2_c0[9];
 
@@ -634,6 +639,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             //rt_printf("force usage updated!\n");
 
         }
+
 
 
         if(isStepForceUsed==true)
@@ -686,9 +692,16 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                         memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
                         rt_printf("leg %d\n touch down!\n",swingID[i]);
                     }
+
+
                 if(isTD[i]==true)
                 {
                     memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
+                }
+                if(isTD[i]==false&&stepCount+1==stanceCount)
+                {
+                    memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+
                 }
             }
 
@@ -697,6 +710,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 isTD[0]=false;
                 isTD[1]=false;
                 isTD[2]=false;
+                // if leg prelongs, then next step c1 should go down, on the contrary, if leg td ealier, then the next step should go up. used for changement of terrain
+                //HeightAdj_c1_2_c0=(swTD_2_c0[1]-Config1_2_c0.LegPee[3*swingID[0]+1])+(swTD_2_c0[4]-Config1_2_c0.LegPee[3*swingID[1]+1])+(swTD_2_c0[7]-Config1_2_c0.LegPee[3*swingID[2]+1]);
+                //HeightAdj_c1_2_c0=HeightAdj_c1_2_c0/3;//negative if leg prelongs(going down),positive if leg td early(going up).
                 isStepFinished=true;
             }
 
@@ -708,6 +724,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         {
 
             isStepFinished=true;
+
         }
 
 
@@ -717,23 +734,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             memcpy(&config_2_c0.LegPee[stanceID[i]*3],&Config0_2_c0.LegPee[stanceID[i]*3],sizeof(double)*3);//stancelegs are ok
             memcpy(&config_2_c0.LegPee[swingID[i]*3],&swLegPee2c0[3*i],sizeof(double)*3);
         }
-        if(stepCount%500==0)
-        {
 
-            //                        cout<<"cout "<<stepCount<<endl;
-            //                        cout<<"before wriiting down"<<endl;
-            ////                        cout<<"body 0 pos 2 c0"<<endl;
-            ////                        g.Display(Config0_2_c0.BodyPee,6);
-            ////                        cout<<"leg 0 pos 2 c0"<<endl;
-            ////                        g.Display(Config0_2_c0.LegPee,18);
-
-            //                        cout<<"body current pos 2 c0"<<endl;
-            //                        g.Display(config_2_c0.BodyPee,6);
-            //                        cout<<"leg current pos 2 c0"<<endl;
-            //                        g.Display(config_2_c0.LegPee,18);
-            //                        cout<<"swingleg current"<<endl;
-            //                        g.Display(swLegPee2c0,9);
-        }
 
         //        if(stepCount%100==0)
         //        {
