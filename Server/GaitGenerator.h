@@ -30,18 +30,20 @@ extern atomic_bool isScanningFinished;
 
 extern aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe;
 
+struct robotData
+{
+    double bodyPee[6];
+    double legPee[18];
+    double waist;
+    int count;
+};
 enum FlagVision
 {
     Free=0,
     VisionScanning=1,
     Requring=2,
  };
- enum GaitType
-{
-    Flat=0,
-    Obstacle=1,
-    Slope=2,
-};
+
 enum GaitMode
 {
     Single=1,
@@ -69,8 +71,8 @@ enum GaitForceState
     Stance=2,
    // LiftOff=3,
     Swing=4,
-
 };
+void startLogDataThread();
 void parseAdjustSlope(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseForce(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseIMU(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);

@@ -3,7 +3,6 @@
 #define YawLimit 0.08
 #include "rtdk.h"
 
-
 using namespace std;
 
 namespace VersatileGait
@@ -48,6 +47,50 @@ static double dLateral=0;
 static bool isForceUsed=false;
 static bool isIMUUsed=false;
 static bool isVisionUsed=false;
+
+aris::control::Pipe<robotData> logPipe(true);
+
+
+void startLogDataThread()
+{
+    static auto logThread = std::thread([]()
+    {
+        sleep(1);
+        //aris::core::logFileNames();
+        auto filename="data.txt";
+
+        static std::ofstream file;
+        file.open(filename);
+        cout << "Sleep for a second waiting for something to init\n";
+
+
+        while(true)
+        {
+
+            robotData data;
+            logPipe.recvInNrt(data);
+
+            file << std::setprecision(15);
+            file<<data.count<<" ";
+            file<<data.waist<<" ";
+
+            for (int j = 0; j < 6; j++)
+            {
+                file << data.bodyPee[j] << "   ";
+            }
+
+            for (int j = 0; j < 18; j++)
+            {
+                file << data.legPee[j] << "   ";
+            }
+            file << std::endl;
+
+        }
+        file.close();
+    });
+
+
+}
 
 void parseGoSlopeVisionFast2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg)
 {
@@ -136,6 +179,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
     //param.b+=dAngle;
     static aris::dynamic::FloatMarker beginMak{robot.ground()};
+    static aris::dynamic::FloatMarker InitMak{robot.body()};
 
     static int stepNumFinished=0;
     static int stepCount=0;
@@ -168,27 +212,27 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     static double bodyAcc[2];
     static double bodyVelDes[2];
     static double bodyVelDes_2_c[2];
- //   static double HeightAdj_c1_2_c0;
+    //   static double HeightAdj_c1_2_c0;
 
 
 
-//    rt_printf("count %d\n",param.count);
+    //    rt_printf("count %d\n",param.count);
     //if(param.count%10==0)
-       // if(isVisionUsed==true)
+    // if(isVisionUsed==true)
 
     if(FlagV==FlagVision::Free)
-        {
+    {
 
-            ScanningInfo sendInfo;
-            sendInfo.isInit=true;
-            VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
-            //rt_printf("Vision Scanning demand sent....................! size %d\n",a);
+        ScanningInfo sendInfo;
+        sendInfo.isInit=true;
+        VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
+        //rt_printf("Vision Scanning demand sent....................! size %d\n",a);
 
-            if(FlagV==FlagVision::Free)
-                memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
-            else
-                rt_printf("vision is scanning ,could not update...........................................................\n");
-        }
+        if(FlagV==FlagVision::Free)
+            memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
+        else
+            rt_printf("vision is scanning ,could not update...........................................................\n");
+    }
 
 
 
@@ -212,11 +256,11 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             param.l+=-dLateral;
             param.b+=dAngle;
 
-             rt_printf("/////////////////current step started!//////////////////////////////\n");
+            rt_printf("/////////////////current step started!//////////////////////////////\n");
 
 
-             rt_printf("A new step begins...swingID %d %d %d\n",swingID[0],swingID[1],swingID[2]);
-             rt_printf("Param!!!!!!walk d %f,walk lateral %f, walk b %f \n",param.d,param.l,param.b);
+            rt_printf("A new step begins...swingID %d %d %d\n",swingID[0],swingID[1],swingID[2]);
+            rt_printf("Param!!!!!!walk d %f,walk lateral %f, walk b %f \n",param.d,param.l,param.b);
 
             double euler[3];
             memset(euler,0,sizeof(double)*3);
@@ -234,6 +278,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             //in this scheduling scheme, the body is set on the waist
             RobotConfig Config0_2_b0;
             robot.GetWa(waistStart);
+            waistStart=asin(sin(waistStart));
             double b0_2_s0[6];//"231"
             memset(b0_2_s0,0,sizeof(double)*6);
             b0_2_s0[5]=waistStart;
@@ -242,17 +287,17 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             double TM_b0_2_g[16];
             aris::dynamic::s_pm_dot_pm(*robot.body().pm(),TM_b0_2_s0,TM_b0_2_g);
 
-//            rt_printf("b0_2_s0 %f %f %f %f %f %f\n",b0_2_s0[0],b0_2_s0[1],b0_2_s0[2],b0_2_s0[3],b0_2_s0[4],b0_2_s0[5]);
-//            rt_printf("TM_b0_2_s0\n");
-//            for(int i=0;i<4;i++)
-//                rt_printf(" %f %f %f %f\n",TM_b0_2_s0[i*4+0],TM_b0_2_s0[i*4+1],TM_b0_2_s0[i*4+2],TM_b0_2_s0[i*4+3]);
+            //            rt_printf("b0_2_s0 %f %f %f %f %f %f\n",b0_2_s0[0],b0_2_s0[1],b0_2_s0[2],b0_2_s0[3],b0_2_s0[4],b0_2_s0[5]);
+            //            rt_printf("TM_b0_2_s0\n");
+            //            for(int i=0;i<4;i++)
+            //                rt_printf(" %f %f %f %f\n",TM_b0_2_s0[i*4+0],TM_b0_2_s0[i*4+1],TM_b0_2_s0[i*4+2],TM_b0_2_s0[i*4+3]);
 
             beginMak.setPrtPm(TM_b0_2_g);
             beginMak.update();
 
             robot.GetPee(Config0_2_b0.LegPee,beginMak);
             double TM_c0_2_b0[16];
-           // double TM_bo_2_c0[16];
+            // double TM_bo_2_c0[16];
             g.GetLeg2bodyFromLegs(Config0_2_b0.LegPee,TM_c0_2_b0);
             //aris::dynamic::s_inv_pm(TM_c0_2_b0,TM_b0_2_c0);
             memset(Config0_2_b0.BodyPee,0,sizeof(double)*6);
@@ -264,14 +309,14 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             Config0_2_c0.BodyPee[5]+=waistStart;
 
             robot.GetPee(Config0_2_c0.LegPee,beginMak);
-//            rt_printf("bodyInit 2 c0 %f %f %f %f %f %f\n",Config0_2_c0.BodyPee[0],Config0_2_c0.BodyPee[1],Config0_2_c0.BodyPee[2],Config0_2_c0.BodyPee[3],Config0_2_c0.BodyPee[4],Config0_2_c0.BodyPee[5]);
+            //            rt_printf("bodyInit 2 c0 %f %f %f %f %f %f\n",Config0_2_c0.BodyPee[0],Config0_2_c0.BodyPee[1],Config0_2_c0.BodyPee[2],Config0_2_c0.BodyPee[3],Config0_2_c0.BodyPee[4],Config0_2_c0.BodyPee[5]);
 
-//            rt_printf("LegPee 2 c0\n");
-//            for(int i=0;i<6;i++)
-//            {
-//                rt_printf("%f %f %f\n",Config0_2_c0.LegPee[3*i],Config0_2_c0.LegPee[3*i+1],Config0_2_c0.LegPee[3*i+2]);
+            //            rt_printf("LegPee 2 c0\n");
+            //            for(int i=0;i<6;i++)
+            //            {
+            //                rt_printf("%f %f %f\n",Config0_2_c0.LegPee[3*i],Config0_2_c0.LegPee[3*i+1],Config0_2_c0.LegPee[3*i+2]);
 
-//            }
+            //            }
             //       Config0_2_c0.BodyPee[3]=asin(sin(Config0_2_c0.BodyPee[3]));
             //       Config0_2_c0.BodyPee[5]=asin(sin(Config0_2_c0.BodyPee[5]));
 
@@ -291,7 +336,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             rt_printf("stance count %d\n",stanceCount);
             //rt_printf("bodyVelDes_2_c  %f %f, vel end %f %f\n",bodyVelStart[0],bodyVelStart[1],bodyVelDes[0],bodyVelDes[1]);
-            rt_printf("vel start  %f %f, vel end %f %f\n",bodyVelStart[0],bodyVelStart[1],bodyVelDes[0],bodyVelDes[1]);
+            rt_printf("vel start  z %f x %f, vel end  z %f x %f\n",bodyVelStart[0],bodyVelStart[1],bodyVelDes[0],bodyVelDes[1]);
             rt_printf("acc %f %f\n",bodyAcc[0],bodyAcc[1]);
 
 
@@ -306,7 +351,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             rt_printf("c displacement for this step forward: %f, left: %f\n",dstraight,lstraight);
 
-           // first, use only the current ground, in which c0  coicide with the assumd ground
+            // first, use only the current ground, in which c0  coicide with the assumd ground
             //body velocity
 
             \
@@ -365,16 +410,16 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                     aris::dynamic::s_pm_dot_pnt(TM_b0_2_c0,&terrainTriangle[3*i],&terrainTriangle_2_c0[3*i]);
                 }
 
-//                rt_printf("TM_c0_2_b0\n");
-//                for(int i=0;i<4;i++)
-//                    rt_printf(" %f %f %f %f\n",TM_c0_2_b0[i*4+0],TM_c0_2_b0[i*4+1],TM_c0_2_b0[i*4+2],TM_c0_2_b0[i*4+3]);
+                //                rt_printf("TM_c0_2_b0\n");
+                //                for(int i=0;i<4;i++)
+                //                    rt_printf(" %f %f %f %f\n",TM_c0_2_b0[i*4+0],TM_c0_2_b0[i*4+1],TM_c0_2_b0[i*4+2],TM_c0_2_b0[i*4+3]);
 
-//                rt_printf("TM_b0_2_c0\n");
-//                for(int i=0;i<4;i++)
-//                    rt_printf(" %f %f %f %f\n",TM_b0_2_c0[i*4+0],TM_b0_2_c0[i*4+1],TM_b0_2_c0[i*4+2],TM_b0_2_c0[i*4+3]);
+                //                rt_printf("TM_b0_2_c0\n");
+                //                for(int i=0;i<4;i++)
+                //                    rt_printf(" %f %f %f %f\n",TM_b0_2_c0[i*4+0],TM_b0_2_c0[i*4+1],TM_b0_2_c0[i*4+2],TM_b0_2_c0[i*4+3]);
 
-//                for (int i=0;i<3;i++)
-//                    rt_printf("terrainTriangle_2_c0 %f %f %f\n",terrainTriangle_2_c0[i*3],terrainTriangle_2_c0[i*3+1],terrainTriangle_2_c0[i*3+2]);
+                //                for (int i=0;i<3;i++)
+                //                    rt_printf("terrainTriangle_2_c0 %f %f %f\n",terrainTriangle_2_c0[i*3],terrainTriangle_2_c0[i*3+1],terrainTriangle_2_c0[i*3+2]);
 
                 double est_TM_c1_2_c0[16];
 
@@ -431,10 +476,10 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
 
             //waist
-//            double absb0_2_g[16];
-//            double b0_2_g[6];
-//            memcpy(&Euler0_2_g[3],euler,sizeof(double)*3);//231 euler angles
-//            aris::dynamic::s_pe2pm(Euler0_2_g,absb0_2_g,"231");
+            //            double absb0_2_g[16];
+            //            double b0_2_g[6];
+            //            memcpy(&Euler0_2_g[3],euler,sizeof(double)*3);//231 euler angles
+            //            aris::dynamic::s_pe2pm(Euler0_2_g,absb0_2_g,"231");
 
             double bo_2_g0[6];
             memcpy(&bo_2_g0[3],euler,sizeof(double)*3);
@@ -471,7 +516,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             body_2_c0[5]=c1_2_c0[5];
             memcpy(&Config1_2_c0.BodyPee,body_2_c0,sizeof(double)*6);
             //c1 height adj to c0
-           // HeightAdj_c1_2_c0=0;
+            // HeightAdj_c1_2_c0=0;
 
 
 
@@ -546,18 +591,18 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         //bodypee angle  2 c0
         double s;
         s=(1-cos(double(stepCount+1)/stanceCount*PI))/2;
-//        double body0_2_c0[6];
-//        memcpy(body0_2_c0,Config0_2_c0.BodyPee,sizeof(double)*6);
-//        body0_2_c0[3]=asin(sin(body0_2_c0[3]));
-//        body0_2_c0[5]=asin(sin(body0_2_c0[5]));
-//        double body1_2_c0[6];
-//        memcpy(body1_2_c0,Config1_2_c0.BodyPee,sizeof(double)*6);
-//        body1_2_c0[3]=asin(sin(body1_2_c0[3]));
-//        body1_2_c0[5]=asin(sin(body1_2_c0[5]));
-//        for(int i=3;i<6;i++)//euler interpolation on a plane
-//        {
-//            config_2_c0.BodyPee[i]=body0_2_c0[i]+s*(body1_2_c0[i]-body0_2_c0[i]);
-//        }
+        //        double body0_2_c0[6];
+        //        memcpy(body0_2_c0,Config0_2_c0.BodyPee,sizeof(double)*6);
+        //        body0_2_c0[3]=asin(sin(body0_2_c0[3]));
+        //        body0_2_c0[5]=asin(sin(body0_2_c0[5]));
+        //        double body1_2_c0[6];
+        //        memcpy(body1_2_c0,Config1_2_c0.BodyPee,sizeof(double)*6);
+        //        body1_2_c0[3]=asin(sin(body1_2_c0[3]));
+        //        body1_2_c0[5]=asin(sin(body1_2_c0[5]));
+        //        for(int i=3;i<6;i++)//euler interpolation on a plane
+        //        {
+        //            config_2_c0.BodyPee[i]=body0_2_c0[i]+s*(body1_2_c0[i]-body0_2_c0[i]);
+        //        }
 
         double quat_body0_2_c0[7];//quaternion representation
         double quat_body1_2_c0[7];
@@ -587,9 +632,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
         double c_2_c0[3];
 
-        c_2_c0[0]=t*bodyVelStart[1]+0.5*bodyAcc[1]*t*t;
+        c_2_c0[0]=t*bodyVelStart[1]+0.5*bodyAcc[1]*t*t;//x
         c_2_c0[1]=0;
-        c_2_c0[2]=t*bodyVelStart[0]+0.5*bodyAcc[0]*t*t;
+        c_2_c0[2]=t*bodyVelStart[0]+0.5*bodyAcc[0]*t*t;//z
 
         config_2_c0.BodyPee[0]=c_2_c0[0]+s*(Config1_2_c1.BodyPee[0]-Config0_2_c0.BodyPee[0])+Config0_2_c0.BodyPee[0];
         config_2_c0.BodyPee[1]=c_2_c0[1]+s*(Config1_2_c1.BodyPee[1]-Config0_2_c0.BodyPee[1])+Config0_2_c0.BodyPee[1];
@@ -774,6 +819,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             stepNumFinished+=1;
             stepCount=0;
             isStepFinished=false;
+            memcpy(bodyVelStart,bodyVelDes_2_c,sizeof(double)*2);//need turn and update
+
             rt_printf("/////////////////current step finished //////////////////////////////\n");
 
             if (gaitCommand==GaitCommand::Stop)
@@ -787,13 +834,28 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 gaitState=GaitState::Walking;
 
         }
+
+        // log data during walking period
+        if(stepCount%10==0)
+        {
+            robotData data;
+            robot.GetPeb(data.bodyPee,InitMak,"231");
+            robot.GetPee(data.legPee,InitMak);
+            robot.GetWa(data.waist);
+            data.count=stepCount;
+            logPipe.sendToNrt(data);
+
+        }
+
+
+
         return 1;
 
     case GaitState::End:
         //        dDist=0;
         //        dAngle=0;
         gaitState=GaitState::None;
-        memcpy(bodyVelStart,bodyVelDes_2_c,sizeof(double)*2);//need turn and update
+        memset(bodyVelStart,0,sizeof(double)*2);
         rt_printf("step end\n");
         stepNumFinished=0;
         return 0;
