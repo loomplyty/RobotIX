@@ -71,8 +71,12 @@ void startLogDataThread()
             logPipe.recvInNrt(data);
 
             file << std::setprecision(15);
-            file<<data.count<<" ";
             file<<data.waist<<" ";
+
+            for (int j = 0; j < 3; j++)
+            {
+                file << data.imu[j] << "   ";
+            }
 
             for (int j = 0; j < 6; j++)
             {
@@ -83,6 +87,17 @@ void startLogDataThread()
             {
                 file << data.legPee[j] << "   ";
             }
+            for (int j = 0; j < 6; j++)
+            {
+                file << data.force[j] << "   ";
+            }
+            for (int j = 0; j < 6; j++)
+            {
+                file << data.legPhase[j] << "   ";
+            }
+
+
+
             file << std::endl;
 
         }
@@ -212,6 +227,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     static double bodyAcc[2];
     static double bodyVelDes[2];
     static double bodyVelDes_2_c[2];
+    static bool isTD[3]={false,false,false};
+
     //   static double HeightAdj_c1_2_c0;
 
 
@@ -670,13 +687,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         //using force
         static double swTD_2_c0[9];
 
-        //        if(isForceUsed==false)
-        //        {
-        //            if(stepCount+1>=stanceCount)
-        //                isStepFinished=true;
-        //            else
-        //                isStepFinished=false;
-        //        }
         static bool isStepForceUsed=false;
         if(stepCount==0)
         {
@@ -693,7 +703,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             {
                 // rt_printf("force used!\n");
             }
-            static bool isTD[3]={false,false,false};
             bool isInTrans[6];
             double force[6];
 
@@ -738,40 +747,40 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                         rt_printf("leg %d\n touch down!\n",swingID[i]);
                     }
 
-
                 if(isTD[i]==true)
                 {
                     memcpy(&swLegPee2c0[i*3],&swTD_2_c0[i*3],sizeof(double)*3);
                 }
-                if(isTD[i]==false&&stepCount+1==stanceCount)
-                {
-                    memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
+                //                if(isTD[i]==false&&stepCount+1==stanceCount)
+                //                {
+                //                    memcpy(&swTD_2_c0[i*3],&swLegPee2c0[i*3],sizeof(double)*3);
 
-                }
-            }
-
-            if(stepCount+1==stanceCount)
-            {
-                isTD[0]=false;
-                isTD[1]=false;
-                isTD[2]=false;
-                // if leg prelongs, then next step c1 should go down, on the contrary, if leg td ealier, then the next step should go up. used for changement of terrain
-                //HeightAdj_c1_2_c0=(swTD_2_c0[1]-Config1_2_c0.LegPee[3*swingID[0]+1])+(swTD_2_c0[4]-Config1_2_c0.LegPee[3*swingID[1]+1])+(swTD_2_c0[7]-Config1_2_c0.LegPee[3*swingID[2]+1]);
-                //HeightAdj_c1_2_c0=HeightAdj_c1_2_c0/3;//negative if leg prelongs(going down),positive if leg td early(going up).
-                isStepFinished=true;
+                //                }
             }
 
         }
+        else
+        {
+            if(stepCount+1==swingCount)
+            {
+                isTD[0]=true;
+                isTD[1]=true;
+                isTD[2]=true;
+            }
 
 
+        }
 
         if(stepCount+1==stanceCount)
         {
-
+            isTD[0]=false;
+            isTD[1]=false;
+            isTD[2]=false;
+            // if leg prelongs, then next step c1 should go down, on the contrary, if leg td ealier, then the next step should go up. used for changement of terrain
+            //HeightAdj_c1_2_c0=(swTD_2_c0[1]-Config1_2_c0.LegPee[3*swingID[0]+1])+(swTD_2_c0[4]-Config1_2_c0.LegPee[3*swingID[1]+1])+(swTD_2_c0[7]-Config1_2_c0.LegPee[3*swingID[2]+1]);
+            //HeightAdj_c1_2_c0=HeightAdj_c1_2_c0/3;//negative if leg prelongs(going down),positive if leg td early(going up).
             isStepFinished=true;
-
         }
-
 
 
         for (int i=0;i<3;i++)
@@ -835,16 +844,33 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
         }
 
-        // log data during walking period
+        //*** log data during walking period***//
         if(stepCount%10==0)
         {
             robotData data;
+            //imu
+            double imu[3];
+            memset(imu,0,sizeof(double)*3);
+            if(isIMUUsed==true)
+                param.imu_data->toEulBody2Ground(imu,"231");
+            imu[0]=0;
+            imu[1]=asin(sin(imu[1]));
+            imu[2]=asin(sin(imu[2]));
+            memcpy(data.imu,imu,sizeof(double)*3);
+            //phase
+            int legPhase[6];
+            memset(legPhase,0,sizeof(int)*6);
+            for(int i=0;i<3;i++)
+                legPhase[swingID[i]]=int(isTD[i]==true);
+            memcpy(data.legPhase,legPhase,sizeof(int)*6);
+            //force
+            for(int i=0;i<6;i++)
+                data.force[i]=param.force_data->at(i).Fz;
+            //body leg waist
             robot.GetPeb(data.bodyPee,InitMak,"231");
             robot.GetPee(data.legPee,InitMak);
             robot.GetWa(data.waist);
-            data.count=stepCount;
-            logPipe.sendToNrt(data);
-
+             logPipe.sendToNrt(data);
         }
 
 

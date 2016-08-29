@@ -35,7 +35,9 @@ struct robotData
     double bodyPee[6];
     double legPee[18];
     double waist;
-    int count;
+    double imu[3];
+    double force[6];
+    int legPhase[6];
 };
 enum FlagVision
 {
