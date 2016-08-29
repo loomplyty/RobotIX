@@ -22,11 +22,20 @@ struct ScanningInfo
 };
 
 extern float gridMap[400][400];
+extern float gridMapBuff[400][400];
+extern int FlagV;
+
 extern atomic_bool isScanningFinished;
-extern atomic_bool isUsingGridMap;
+ //extern atomic_bool isUsingGridMap;
 
 extern aris::control::Pipe<VersatileGait::ScanningInfo> visionSlopePipe;
 
+enum FlagVision
+{
+    Free=0,
+    VisionScanning=1,
+    Requring=2,
+ };
  enum GaitType
 {
     Flat=0,

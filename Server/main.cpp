@@ -454,17 +454,19 @@ static auto visionSlopeThread = std::thread([]()
     {
         VersatileGait::ScanningInfo info;
         VersatileGait::visionSlopePipe.recvInNrt(info);
-        cout<<"matrix received!"<<endl;
+       // cout<<"matrix received!"<<endl;
 
         if(info.isInit == true)
         {
           //  kinect2.InitMap();
          //   kinect2.SaveMap();
-            if(VersatileGait::isUsingGridMap==false)
-                memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
+            VersatileGait::FlagV=VersatileGait::FlagVision::VisionScanning;
+            memcpy(VersatileGait::gridMapBuff,kinect2.visData.gridMap,sizeof(float)*400*400);
+            VersatileGait::FlagV=VersatileGait::FlagVision::Free;
+
 
               //cout<<"map elevation[200][200] in vision thread"<<VersatileGait::gridMap[200][200]<<endl;
-            cout<<"map Init"<<endl;
+           // cout<<"map Init"<<endl;
         }
         else
         {
@@ -479,12 +481,14 @@ static auto visionSlopeThread = std::thread([]()
             }
           //  kinect2.UpdateConMap();
           //  kinect2.SaveMap();
-            if(VersatileGait::isUsingGridMap==false)
-                memcpy(VersatileGait::gridMap,kinect2.visData.gridMap,sizeof(float)*400*400);
-            cout<<"map update"<<endl;
+
+            VersatileGait::FlagV=VersatileGait::FlagVision::VisionScanning;
+            memcpy(VersatileGait::gridMapBuff,kinect2.visData.gridMap,sizeof(float)*400*400);
+            VersatileGait::FlagV=VersatileGait::FlagVision::Free;
+            //cout<<"map update"<<endl;
         }
 
-        cout<<" map recorded to shared memory"<<endl;
+      //  cout<<" map recorded to shared memory"<<endl;
         VersatileGait::isScanningFinished = true;
     }
 });
@@ -533,17 +537,12 @@ int main(int argc, char *argv[])
     //    rs.addCmd("swk", stopVisionWalkParse, visionWalk);
 
     //slope walking
-    rs.addCmd("gsv",VersatileGait::parseGoSlopeVision,VersatileGait::GoSlopeByVision);
-    rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVision);
-    rs.addCmd("frc",VersatileGait::parseForce,VersatileGait::GoSlopeByVision);
-    rs.addCmd("imu",VersatileGait::parseIMU,VersatileGait::GoSlopeByVision);
-    rs.addCmd("vis",VersatileGait::parseVision,VersatileGait::GoSlopeByVision2);
+     rs.addCmd("adj",VersatileGait::parseAdjustSlope,VersatileGait::GoSlopeByVisionFast2);
+    rs.addCmd("frc",VersatileGait::parseForce,VersatileGait::GoSlopeByVisionFast2);
+    rs.addCmd("imu",VersatileGait::parseIMU,VersatileGait::GoSlopeByVisionFast2);
+    rs.addCmd("vis",VersatileGait::parseVision,VersatileGait::GoSlopeByVisionFast2);
 
-    rs.addCmd("gsh",VersatileGait::parseGoSlopeHuman,VersatileGait::GoSlopeByHuman);
-
-    rs.addCmd("gsf",VersatileGait::parseGoSlopeFast,VersatileGait::GoSlopeFast);
-    rs.addCmd("gsv2",VersatileGait::parseGoSlopeVision2,VersatileGait::GoSlopeByVision2);
-    rs.addCmd("gsvf2",VersatileGait::parseGoSlopeVisionFast2,VersatileGait::GoSlopeByVisionFast2);
+     rs.addCmd("gsvf2",VersatileGait::parseGoSlopeVisionFast2,VersatileGait::GoSlopeByVisionFast2);
 
     rs.open();
 
