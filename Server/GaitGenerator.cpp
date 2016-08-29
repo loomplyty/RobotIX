@@ -378,7 +378,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
                 g.GetTri2bodyFromTri(terrainTriangle_2_c0,param.b,est_TM_c1_2_c0);
                 double est_euler_c1_2_c0[6];
-                aris::dynamic::s_pm2pe(est_TM_c1_2_c0,est_euler_c1_2_c0,"213");
+                aris::dynamic::s_pm2pe(est_TM_c1_2_c0,est_euler_c1_2_c0,"231");
 
                 est_euler_c1_2_c0[3]=asin(sin(est_euler_c1_2_c0[3]));//[0,pi/2]
                 est_euler_c1_2_c0[4]=asin(sin(est_euler_c1_2_c0[4]));//[0,pi/2]
@@ -393,17 +393,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 c1_2_c0[4]=0.5*est_euler_c1_2_c0[4];
                 c1_2_c0[5]=0.5*est_euler_c1_2_c0[5];
 
-                aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"213");
-                rt_printf("From Vision: c1_2_c0 euler angle from vision: %f (yaw) %f %f\n",est_euler_c1_2_c0[3],est_euler_c1_2_c0[4],est_euler_c1_2_c0[5]);
-
-//                //for test
-//                c1_2_c0[3]=est_euler_c1_2_c0[3];
-//                c1_2_c0[4]=0;
-//                c1_2_c0[5]=0.2;
-//                rt_printf("For test From Vision: c1_2_c0 231 euler angle from vision: %f (yaw) %f %f\n",c1_2_c0[3],c1_2_c0[4],c1_2_c0[5]);
-
+                c1_2_c0[5]=0.1;
                 aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"231");
-//                //test done
+                rt_printf("From Vision: c1_2_c0 euler angle from vision 231: %f (yaw) %f %f\n",c1_2_c0[3],c1_2_c0[4],c1_2_c0[5]);
+
+
+
 
                 aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
                 //isUsingGridMap=false;
@@ -433,11 +428,33 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             }
 
 
+            //waist
+//            double absb0_2_g[16];
+//            double b0_2_g[6];
+//            memcpy(&Euler0_2_g[3],euler,sizeof(double)*3);//231 euler angles
+//            aris::dynamic::s_pe2pm(Euler0_2_g,absb0_2_g,"231");
+
+            double bo_2_g0[6];
+            memcpy(&bo_2_g0[3],euler,sizeof(double)*3);
+            double TM_b0_2_g0[16];
+            double TM_c0_2_g0[16];
+            double TM_c1_2_g0[16];
+            aris::dynamic::s_pe2pm(bo_2_g0,TM_b0_2_g0,"231");
+            aris::dynamic::s_pm_dot_pm(TM_b0_2_g0,TM_c0_2_b0,TM_c0_2_g0);
+            aris::dynamic::s_pm_dot_pm(TM_c0_2_g0,TM_c1_2_c0,TM_c1_2_g0);
+
+            double b1_2_g0[6];
+            aris::dynamic::s_pm2pe(TM_c1_2_g0,b1_2_g0,"231");
+            //rt_printf("c1_2_g0  %f %f %f \n",b1_2_g0[3],b1_2_g0[4],b1_2_g0[5]);
+
+            waistEnd=asin(sin(b1_2_g0[5]));
+
+
             // body 2 c0  -->ok for RobotIX
             double body_2_c1[6];
             double body_2_c0[6];
             double bodyOffset[3];
-            g.GetBodyOffsetRobotIX(euler[2],euler[1],bodyOffset);//here use the last imu value to adjust body , or else use the next imu value to do this.
+            g.GetBodyOffsetRobotIX(b1_2_g0[5],b1_2_g0[4],bodyOffset);//here use the last imu value to adjust body , or else use the next imu value to do this.
             body_2_c1[0]=0+bodyOffset[0];//+offset
             body_2_c1[1]=-stdLegPee2B[1]+bodyOffset[1];//0.85+offset
             body_2_c1[2]=0+bodyOffset[2];//+offset
@@ -453,45 +470,20 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             memcpy(&Config1_2_c0.BodyPee,body_2_c0,sizeof(double)*6);
 
 
-            //waist
-//            double absb0_2_g[16];
-//            double b0_2_g[6];
-//            memcpy(&Euler0_2_g[3],euler,sizeof(double)*3);//231 euler angles
-//            aris::dynamic::s_pe2pm(Euler0_2_g,absb0_2_g,"231");
 
 
 
-            double bo_2_g0[6];
-            memcpy(&bo_2_g0[3],euler,sizeof(double)*3);
-            double TM_b0_2_g0[16];
-            double TM_c0_2_g0[16];
-            double TM_c1_2_g0[16];
-            aris::dynamic::s_pe2pm(bo_2_g0,TM_b0_2_g0,"231");
-            aris::dynamic::s_pm_dot_pm(TM_b0_2_g0,TM_c0_2_b0,TM_c0_2_g0);
-            aris::dynamic::s_pm_dot_pm(TM_c0_2_g0,TM_c1_2_c0,TM_c1_2_g0);
+            //            rt_printf("TM_b0_2_g0\n");
+            //            for(int i=0;i<4;i++)
+            //                rt_printf(" %f %f %f %f\n",TM_b0_2_g0[i*4+0],TM_b0_2_g0[i*4+1],TM_b0_2_g0[i*4+2],TM_b0_2_g0[i*4+3]);
 
+            //            rt_printf("TM_c0_2_g0");
+            //            for(int i=0;i<4;i++)
+            //                rt_printf(" %f %f %f %f\n",TM_c0_2_g0[i*4+0],TM_c0_2_g0[i*4+1],TM_c0_2_g0[i*4+2],TM_c0_2_g0[i*4+3]);
 
-//            rt_printf("TM_b0_2_g0\n");
-//            for(int i=0;i<4;i++)
-//                rt_printf(" %f %f %f %f\n",TM_b0_2_g0[i*4+0],TM_b0_2_g0[i*4+1],TM_b0_2_g0[i*4+2],TM_b0_2_g0[i*4+3]);
-
-//            rt_printf("TM_c0_2_g0");
-//            for(int i=0;i<4;i++)
-//                rt_printf(" %f %f %f %f\n",TM_c0_2_g0[i*4+0],TM_c0_2_g0[i*4+1],TM_c0_2_g0[i*4+2],TM_c0_2_g0[i*4+3]);
-
-//            rt_printf("TM_c1_2_g0");
-//            for(int i=0;i<4;i++)
-//                rt_printf(" %f %f %f %f\n",TM_c1_2_g0[i*4+0],TM_c1_2_g0[i*4+1],TM_c1_2_g0[i*4+2],TM_c1_2_g0[i*4+3]);
-
-
-            double b1_2_g0[6];
-
-            aris::dynamic::s_pm2pe(TM_c1_2_g0,b1_2_g0,"231");
-            //rt_printf("c1_2_g0  %f %f %f \n",b1_2_g0[3],b1_2_g0[4],b1_2_g0[5]);
-
-            waistEnd=asin(sin(b1_2_g0[5]));
-
-
+            //            rt_printf("TM_c1_2_g0");
+            //            for(int i=0;i<4;i++)
+            //                rt_printf(" %f %f %f %f\n",TM_c1_2_g0[i*4+0],TM_c1_2_g0[i*4+1],TM_c1_2_g0[i*4+2],TM_c1_2_g0[i*4+3]);
             //compute config 2 c1 ###
 
             memcpy(Config1_2_c1.BodyPee,body_2_c1,sizeof(double)*6);

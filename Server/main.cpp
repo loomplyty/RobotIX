@@ -464,7 +464,6 @@ static auto visionSlopeThread = std::thread([]()
             memcpy(VersatileGait::gridMapBuff,kinect2.visData.gridMap,sizeof(float)*400*400);
             VersatileGait::FlagV=VersatileGait::FlagVision::Free;
 
-
               //cout<<"map elevation[200][200] in vision thread"<<VersatileGait::gridMap[200][200]<<endl;
            // cout<<"map Init"<<endl;
         }
