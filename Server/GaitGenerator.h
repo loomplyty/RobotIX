@@ -169,6 +169,8 @@ public:
     void Rz(const double rz,double* TM);
     double norm(double* vec);
     void normalize(double* vec);
+    void qautNormalize(double* vec);
+
     int sign(double d);
     void TriangleIncenter(const double* stLegs,double* center);
     void LegsTransform(const double* LegPee,const double* TM,double *LegPeeTranformed);
