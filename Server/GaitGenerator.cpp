@@ -57,7 +57,15 @@ void startLogDataThread()
     {
         sleep(1);
         //aris::core::logFileNames();
-        auto filename="data.txt";
+
+        std::time_t beginTime{};
+        time(&beginTime);
+
+        auto timeinfo = localtime(&beginTime);
+        char timeCh[1024]={0};
+
+        strftime(timeCh,1024,"_%Y-%m-%d_%H-%M-%S_log.txt",timeinfo);
+         std::string filename = "data" + string(timeCh);
 
         static std::ofstream file;
         file.open(filename);
@@ -209,12 +217,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         dDist=0;
         dAngle=0;
         dLateral=0;
-        for(int i=0;i<400;i++)
-            for(int j=0;j<400;j++)
-            {
-                gridMap[i][j]=-0.9;
-               // gridMapBuff[i][j]=-0.9;
-            }
+//        for(int i=0;i<400;i++)
+//            for(int j=0;j<400;j++)
+//            {
+//                gridMap[i][j]=-0.9;
+//               // gridMapBuff[i][j]=-0.9;
+//            }
     }
 
     static double waistStart;
@@ -266,8 +274,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             FlagV=FlagVision::DataCopying;
             memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
             FlagV=FlagVision::Free;
-                    rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
-                    rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
+                   // rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
+                    //rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
         }
         else
             rt_printf("vision is scanning ,could not update map...........................................................\n");
@@ -491,9 +499,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
                 aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"231");
                 rt_printf("From Vision: c1_2_c0 euler angle from vision 231: %f (yaw) %f %f\n",c1_2_c0[3],c1_2_c0[4],c1_2_c0[5]);
-
-
-
 
                 aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
                 //isUsingGridMap=false;

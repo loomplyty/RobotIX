@@ -23,13 +23,13 @@ void GenPointCoud(const CloudPtr &rawCloud, CloudPtr &adjCloud)
     adjCloud->clear();
     //    cout<<"Point: "<<rawCloud->points.front().x<<" "<<rawCloud->points.front().y<<" "<< rawCloud->points.front().z<<endl;
 
-    cout<<"111"<<endl;
+   // cout<<"111"<<endl;
 
     std::vector<int> mapping;
     CloudPtr newcloud(new Cloud);
     pcl::removeNaNFromPointCloud(*rawCloud, *newcloud, mapping);
 
-    cout<<"222"<<endl;
+    //cout<<"222"<<endl;
 
 //    CloudPtr newcloud1(new Cloud);
 //    pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor(true);
@@ -73,7 +73,7 @@ void GenPointCoud(const CloudPtr &rawCloud, CloudPtr &adjCloud)
     CloudPtr newcloud2(new Cloud);
     pcl::transformPointCloud(*newcloud, *newcloud2, matrixSTG);
 
-    cout<<"444"<<endl;
+    //cout<<"444"<<endl;
 
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud (newcloud2);
@@ -81,7 +81,7 @@ void GenPointCoud(const CloudPtr &rawCloud, CloudPtr &adjCloud)
     pass.setFilterLimits (0.0, 2.0);
     pass.filter (*adjCloud);
 
-    cout<<"555"<<endl;
+   // cout<<"555"<<endl;
 }
 
 void GenGridMap(const CloudPtr &adjCloud, VISION_DATA &cdata)
@@ -413,7 +413,7 @@ void KINECT2::Update()
         }
     }
 
-    cout<<"aaa"<<endl;
+    //cout<<"aaa"<<endl;
     cloud->is_dense = false;
     GenPointCoud(cloud, mKinect2Struct->mPointCloud);
 

@@ -458,8 +458,8 @@ static auto visionSlopeThread = std::thread([]()
 
         if(info.isInit == true)
         {
-          //  kinect2.InitMap();
-             if(VersatileGait::FlagV==VersatileGait::FlagVision::Free)
+            kinect2.InitMap();
+            if(VersatileGait::FlagV==VersatileGait::FlagVision::Free)
             {
                 VersatileGait::FlagV=VersatileGait::FlagVision::VisionScanning;
                 memcpy(VersatileGait::gridMapBuff,kinect2.visData.gridMap,sizeof(float)*400*400);
@@ -467,19 +467,19 @@ static auto visionSlopeThread = std::thread([]()
                 VersatileGait::FlagV=VersatileGait::FlagVision::Free;
             }
 
-         }
+        }
         else
         {
             float TM_float[16];
             for(int i=0;i<16;i++)
                 TM_float[i]=float(info.TM[i]);
-           // kinect2.GetPose(TM_float);
+            kinect2.GetPose(TM_float);
             cout<<"Transformation Matrix got in Vision!"<<endl;
             for(int i=0;i<4;i++)
             {
                 cout<<TM_float[i*4]<<" "<<TM_float[i*4+1]<<" "<<TM_float[i*4+2]<<" "<<TM_float[i*4+3]<<" "<<endl;
             }
-           // kinect2.UpdateConMap();
+            kinect2.UpdateConMap();
 
             if(VersatileGait::FlagV==VersatileGait::FlagVision::Free)
             {
@@ -499,7 +499,7 @@ static auto visionSlopeThread = std::thread([]()
 
 int main(int argc, char *argv[])
 {
-   // kinect2.Start();
+    kinect2.Start();
 
     VersatileGait::startLogDataThread();
     std::string xml_address;
