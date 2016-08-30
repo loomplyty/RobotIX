@@ -20,12 +20,12 @@ float gridMapBuff[400][400];
 const int Leg2Force[6]{0,1,2,3,4,5};
 
 const double stdLegPee2B[18]=
-{  -0.3,-0.95,-0.55,
-   -0.45,-0.95,0,
-   -0.3,-0.95,0.55,
-   0.3,-0.95,-0.55,
-   0.45,-0.95,0,
-   0.3,-0.95,0.55
+{  -0.3,-0.99,-0.55,
+   -0.45,-0.99,0,
+   -0.3,-0.99,0.55,
+   0.3,-0.99,-0.55,
+   0.45,-0.99,0,
+   0.3,-0.99,0.55
 };//change 0.85 to std offset height
 
 const double stdLegPee2C[18]=
@@ -237,7 +237,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
     static int swingID[3]{0,2,4};
     static int stanceID[3]{1,5,3};
-    const static double dutyFactor{0.6};
+    const static double dutyFactor{0.75};
 
     static double bodyVelStart[2];// z and x direction
     //  static double bodyVelEnd[2];
@@ -1755,7 +1755,7 @@ void GaitGenerator::GetBodyOffsetRobotIX(const double pitch, const double roll, 
     // only for test
     offset[0]=-stdLegPee2B[1]*sin(roll);
     offset[1]=0.0;
-    offset[2]=stdLegPee2B[1]*tan(pitch);// not sure depend on robot elevation
+    offset[2]=(stdLegPee2B[1]-0.25)*tan(pitch);// not sure depend on robot elevation
     rt_printf("offset %f %f %f\n",offset[0],offset[1],offset[2]);
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)

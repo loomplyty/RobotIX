@@ -20,7 +20,7 @@
             <S2jpe type="matrix">{ 0, 0,      0,     0, -PI / 2, 0 }</S2jpe>
             <S3ipe type="matrix">{ 0, 0.059, -0.034, 0, -PI / 2, 0 }</S3ipe>
             <S3jpe type="matrix">{ 0, 0,      0,     0, -PI / 2, 0 }</S3jpe>
-            <Sfipe type="matrix">{ 0.1097, 0.0093, 0, 0, 0, 0 }</Sfipe>
+            <Sfipe type="matrix">{ 0.14629, -0.00047, 0, 0, 0, 0 }</Sfipe>
             <Sfjpe type="matrix">{ 0,   0, 0, 0, 0, 0 }</Sfjpe>
             <LFpe type="matrix">{-0.07288 , 0 ,  0.0732,  PI/2,  PI* 5/6,   -PI/2-PI*75/180}</LFpe>
             <LMpe type="matrix">{-0.12661 , 0 ,  0,       PI/2,  PI* 6/6,   -PI/2-PI*75/180}</LMpe>
@@ -763,9 +763,9 @@
             </odj>
             <gsvf2 default="wks_param">
                 <wks_param type="group">
-                    <totalCount abbreviation="t" type="int" default="2500"/>
+                    <totalCount abbreviation="t" type="int" default="4000"/>
                     <distance abbreviation="d" type="double" default="-0.1"/>
-                    <height abbreviation="h" type="double" default="0.05"/>
+                    <height abbreviation="h" type="double" default="0.1"/>
                     <lateral abbreviation="l" type="double" default="0"/>
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>
@@ -917,5 +917,5 @@
     <Sensors>
          <IMU active="true" type="xsens_imu" portLinux="/dev/ttyUSB0" baudRate="921600" sampleRate="400" PeImuGround2BodyGound="{0,0,0,PI,PI/2,3*PI/2}" PeImu2Body="{0,0,0,0,PI/2,PI/2}"/>
     </Sensors>
-    <UDP remote_ip="192.168.1.102" remote_port="6661" local_port="6660"/>
+    <UDP remote_ip="192.168.1.101" remote_port="6661" local_port="6660"/>
 </RobotIX>
