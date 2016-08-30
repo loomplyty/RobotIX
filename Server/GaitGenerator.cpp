@@ -15,8 +15,8 @@ atomic_bool isScanningFinished{false};
 //atomic_bool isUsingGridMap{false};
 int FlagV{FlagVision::Free};
 
-float gridMap[400][400]{-0.9};
-float gridMapBuff[400][400]{-0.9};
+float gridMap[400][400];
+float gridMapBuff[400][400];
 
 const int Leg2Force[6]{0,1,2,3,4,5};
 
@@ -209,6 +209,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         dDist=0;
         dAngle=0;
         dLateral=0;
+        for(int i=0;i<400;i++)
+            for(int j=0;j<400;j++)
+            {
+                gridMap[i][j]=-0.9;
+                gridMapBuff[i][j]=-0.9;
+            }
     }
 
     static double waistStart;
@@ -248,7 +254,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         ScanningInfo sendInfo;
         sendInfo.isInit=true;
         VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
-        //rt_printf("Vision Scanning demand sent....................! size %d\n",a);
 
         if(FlagV==FlagVision::Free)
             memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
@@ -259,12 +264,9 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
     {
         rt_printf("flag %d\n",FlagV);
         rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
-
         rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
 
     }
-
-
 
 
     switch(gaitState)
@@ -404,17 +406,16 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             ////   second, could get vision to TM_visTerran_2_c0//////////////////////////////////////
 
             // this only differenct between vision and noraml is the pitch and roll between c1 and c0
-            if(isVisionUsed==true)
+            if(isVisionUsed==true&&dstraight>0)//atan(l/d) belongs to [-pi/2,pi/2]
             {
+
                 FlagV=FlagVision::Requring;
                 //isUsingGridMap=true;
                 rt_printf("From Vision:using vision map!!!!!!!!\n");
 
 
-
                 double theta[6];
                 theta[3]=atan(lstraight/dstraight);
-                rt_printf("theta walking direction %f\n",theta[3]);
                 double thetaTM[16];
                 aris::dynamic::s_pe2pm(theta,thetaTM,"213");
 
@@ -466,9 +467,17 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
                 c1_2_c0[0]=lstraight;//x
                 c1_2_c0[1]=0;
                 c1_2_c0[2]=dstraight;
-                c1_2_c0[3]=est_euler_c1_2_c0[3];// euqals to param.b
-                c1_2_c0[4]=0.5*est_euler_c1_2_c0[4];
-                c1_2_c0[5]=0.5*est_euler_c1_2_c0[5];
+                c1_2_c0[3]=param.b;//which==est_euler_c1_2_c0[3];// euqals to param.b
+                c1_2_c0[4]=0;
+                c1_2_c0[5]=0;
+                rt_printf("theta walking direction %f\n",theta[3]);
+
+                if(abs(theta[3])<PI/3)
+                {
+                    c1_2_c0[4]=0.5*est_euler_c1_2_c0[4]*(PI/3-abs(theta[3])); //believe region, [-pi/3,pi/3]
+                    c1_2_c0[5]=0.5*est_euler_c1_2_c0[5]*(PI/3-abs(theta[3]));
+                }
+
 
                 aris::dynamic::s_pe2pm(c1_2_c0,TM_c1_2_c0,"231");
                 rt_printf("From Vision: c1_2_c0 euler angle from vision 231: %f (yaw) %f %f\n",c1_2_c0[3],c1_2_c0[4],c1_2_c0[5]);
@@ -885,7 +894,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             robot.GetPeb(data.bodyPee,InitMak,"231");
             robot.GetPee(data.legPee,InitMak);
             robot.GetWa(data.waist);
-             logPipe.sendToNrt(data);
+            logPipe.sendToNrt(data);
         }
 
 
@@ -1498,11 +1507,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
 }
 
 
-void GaitGenerator::isForceInTransition(double *force,bool* judge)
-{
 
-
-}
 
 
 void GaitGenerator::LegsTransform(const double *LegPee, const double *TM, double *LegPeeTranformed)
@@ -1614,13 +1619,6 @@ void GaitGenerator::TMbody(const double *bodyP, const double *bodyR, double *tmb
     Trans(bodyP,TMtrans);
     aris::dynamic::s_pe2pm(bodyR,TMrot,"213");
     aris::dynamic::s_pm_dot_pm(TMtrans,TMrot,tmbody);
-}
-void GaitGenerator::SetWalkParams(const WalkGaitParams param,const double dDist,const double dAngle)
-{
-    memcpy(&m_Params,&param,sizeof(param));
-    m_Params.d+=dDist*sign(m_Params.d);
-    m_Params.b+=dAngle;
-    rt_printf("d %f, b %f\n",m_Params.d,m_Params.b);
 }
 
 

@@ -121,20 +121,9 @@ public:
     GaitGenerator();
     //    ~GaitGenerator();
 
-    void SetWalkParams(const WalkGaitParams param,const double dDist,const double dAngle);
-    void UpdateRobotConfig(const double* legPee2b,const double pitch,const double roll);
 
-    void GaitDetermineNextConfigByVision();
-    void GaitDetermineNextConfigByHuman(const double terrainPitch,const double terrainRoll);
-    void GaitDetermineNextConfigFast(double bodyVel,double acc, double bodyVelDesire);
 
     bool GenerateTraj(const int count,const int totalCount,WalkGaitParams param,RobotConfig& config_2_b0);
-
-
-    void isForceInTransition(double * force,bool* judge);
-
-
-
 
     void slopeGetNextConfig(aris::dynamic::Model &model,const double IMUpitch,const double IMUroll);
     void GetLeg2bodyFromLegs( double* Legs,double *TM);
