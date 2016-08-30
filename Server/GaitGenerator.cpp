@@ -15,7 +15,6 @@ atomic_bool isScanningFinished{false};
 //atomic_bool isUsingGridMap{false};
 int FlagV{FlagVision::Free};
 
-float gridMap[400][400];
 float gridMapBuff[400][400];
 
 const int Leg2Force[6]{0,1,2,3,4,5};
@@ -37,6 +36,7 @@ const double stdLegPee2C[18]=
    0.45,0,0,
    0.3,0,0.55
 };//change 0.85 to std offset height
+static float gridMap[400][400];
 static int gaitState=GaitState::None;
 static int gaitCommand=GaitCommand::NoCommand;
 static double pitch_2_b0=0;
@@ -213,7 +213,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             for(int j=0;j<400;j++)
             {
                 gridMap[i][j]=-0.9;
-                gridMapBuff[i][j]=-0.9;
+               // gridMapBuff[i][j]=-0.9;
             }
     }
 
@@ -248,25 +248,36 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
 
     //sending for map update
-    if(FlagV==FlagVision::Free)
-    {
 
+//    if(FlagV==FlagVision::Free)
+    if(param.count%300==0)
+    {
         ScanningInfo sendInfo;
+        memset(sendInfo.TM,0,sizeof(double)*16);
         sendInfo.isInit=true;
         VersatileGait::visionSlopePipe.sendToNrt(sendInfo);
-
-        if(FlagV==FlagVision::Free)
-            memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
-        else
-            rt_printf("vision is scanning ,could not update...........................................................\n");
+        rt_printf("visionCommand Sending...\n");
     }
+
     if(param.count%100==0)
     {
-        rt_printf("flag %d\n",FlagV);
-        rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
-        rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
-
+        if(FlagV==FlagVision::Free)
+        {
+            FlagV=FlagVision::DataCopying;
+            memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
+            FlagV=FlagVision::Free;
+                    rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
+                    rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
+        }
+        else
+            rt_printf("vision is scanning ,could not update map...........................................................\n");
     }
+//    if(param.count%100==0)
+//    {
+//        rt_printf("flag %d\n",FlagV);
+//        rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
+//        rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
+//    }
 
 
     switch(gaitState)
@@ -292,7 +303,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
 
             rt_printf("A new step begins...swingID %d %d %d\n",swingID[0],swingID[1],swingID[2]);
-            rt_printf("Param!!!!!!walk d %f,walk lateral %f, walk b %f \n",param.d,param.l,param.b);
+            rt_printf("Param!!!!!!\nwalk d %f,\n walk lateral %f,\n walk b %f \n",param.d,param.l,param.b);
 
             double euler[3];
             memset(euler,0,sizeof(double)*3);
@@ -409,8 +420,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             if(isVisionUsed==true&&dstraight>0)//atan(l/d) belongs to [-pi/2,pi/2]
             {
 
-                FlagV=FlagVision::Requring;
-                //isUsingGridMap=true;
+                 //isUsingGridMap=true;
                 rt_printf("From Vision:using vision map!!!!!!!!\n");
 
 
@@ -487,7 +497,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
                 aris::dynamic::s_inv_pm(TM_c1_2_c0,TM_c0_2_c1);
                 //isUsingGridMap=false;
-                FlagV=FlagVision::Free;
 
             }
             ////////////////////***********///////////////vision////////////

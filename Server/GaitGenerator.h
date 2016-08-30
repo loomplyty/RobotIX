@@ -21,7 +21,7 @@ struct ScanningInfo
     double TM[16];
 };
 
-extern float gridMap[400][400];
+//extern float gridMap[400][400];
 extern float gridMapBuff[400][400];
 extern int FlagV;
 
@@ -43,7 +43,7 @@ enum FlagVision
 {
     Free=0,
     VisionScanning=1,
-    Requring=2,
+    DataCopying=2,
  };
 
 enum GaitMode
