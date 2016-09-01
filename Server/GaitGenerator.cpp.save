@@ -20,52 +20,27 @@ float gridMapBuff[400][400];
 const int Leg2Force[6]{0,1,2,3,4,5};
 
 const double stdLegPee2B[18]=
-{  -0.3,-1,-0.45,
-   -0.45,-1,0,
-   -0.45,-1,0.7,
-   0.3,-1,-0.45,
-   0.45,-1,0,
-   0.45,-1,0.7
+{  -0.3,-0.99,-0.45,
+   -0.45,-0.99,0,
+   -0.3,-0.99,0.65,
+   0.45,-0.99,-0.45,
+   0.45,-0.99,0,
+   0.4,-0.99,0.65
 };//change 0.85 to std offset height
 
 const double stdLegPee2C[18]=
 {  -0.3,0,-0.45,
    -0.45,0,0,
-   -0.45,0,0.7,
-   0.3,0,-0.45,
+   -0.3,0,0.65,
+   0.4,0,-0.45,
    0.45,0,0,
-   0.45,0,0.7
+   0.4,0,0.65
 };//change 0.85 to std offset height
-const double ScrewUpLimit[18]=
-{
-    1.112,1.128,1.128,
-    1.112,1.128,1.128,
-    1.112,1.128,1.128,
-    1.112,1.128,1.128,
-    1.112,1.128,1.128,
-    1.112,1.128,1.128,
-};
-
-const double ScrewDownLimit[18]=
-{
-    0.722,0.738,0.738,
-    0.722,0.738,0.738,
-    0.722,0.738,0.738,
-    0.722,0.738,0.738,
-    0.722,0.738,0.738,
-    0.722,0.738,0.738,
-};
-const double ScrewMargin{0.01};
-const double ForceTDvalue{70};// POSITIVE HERE
-const double dutyFactor{0.65};
-const double adjPitch{0.05};
-
-
 static float gridMap[400][400];
 static int gaitState=GaitState::None;
 static int gaitCommand=GaitCommand::NoCommand;
-//static double pitch_2_b0=0;
-//static double roll_2_b0=0;
+static double pitch_2_b0=0;
+static double roll_2_b0=0;
 static double dDist=0;
 static double dAngle=0;
 static double dLateral=0;
@@ -90,7 +65,7 @@ void startLogDataThread()
         char timeCh[1024]={0};
 
         strftime(timeCh,1024,"_%Y-%m-%d_%H-%M-%S_log.txt",timeinfo);
-        std::string filename = "data" + string(timeCh);
+         std::string filename = "data" + string(timeCh);
 
         static std::ofstream file;
         file.open(filename);
@@ -242,12 +217,12 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         dDist=0;
         dAngle=0;
         dLateral=0;
-        //        for(int i=0;i<400;i++)
-        //            for(int j=0;j<400;j++)
-        //            {
-        //                gridMap[i][j]=-0.9;
-        //               // gridMapBuff[i][j]=-0.9;
-        //            }
+//        for(int i=0;i<400;i++)
+//            for(int j=0;j<400;j++)
+//            {
+//                gridMap[i][j]=-0.9;
+//               // gridMapBuff[i][j]=-0.9;
+//            }
     }
 
     static double waistStart;
@@ -262,6 +237,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
     static int swingID[3]{0,2,4};
     static int stanceID[3]{1,5,3};
+    const static double dutyFactor{0.75};
 
     static double bodyVelStart[2];// z and x direction
     //  static double bodyVelEnd[2];
@@ -281,7 +257,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
     //sending for map update
 
-    //    if(FlagV==FlagVision::Free)
+//    if(FlagV==FlagVision::Free)
     if(param.count%300==0)
     {
         ScanningInfo sendInfo;
@@ -298,18 +274,18 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             FlagV=FlagVision::DataCopying;
             memcpy(gridMap,gridMapBuff,sizeof(float)*400*400);
             FlagV=FlagVision::Free;
-            // rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
-            //rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
+                   // rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
+                    //rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
         }
         else
             rt_printf("vision is scanning ,could not update map...........................................................\n");
     }
-    //    if(param.count%100==0)
-    //    {
-    //        rt_printf("flag %d\n",FlagV);
-    //        rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
-    //        rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
-    //    }
+//    if(param.count%100==0)
+//    {
+//        rt_printf("flag %d\n",FlagV);
+//        rt_printf("map buff  is : %f %f\n",gridMapBuff[200][200],gridMapBuff[300][200]);
+//        rt_printf("map   is : %f %f\n",gridMap[200][200],gridMap[300][200]);
+//    }
 
 
     switch(gaitState)
@@ -346,7 +322,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             euler[0]=0;// yaw being zero
             euler[1]=asin(sin(euler[1]));
-            euler[2]=asin(sin(euler[2]));
+            euler[2]=asin(sin(euler[2]))-4.0/180*PI;
 
 
 
@@ -452,7 +428,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             if(isVisionUsed==true&&dstraight>0)//atan(l/d) belongs to [-pi/2,pi/2]
             {
 
-                //isUsingGridMap=true;
+                 //isUsingGridMap=true;
                 rt_printf("From Vision:using vision map!!!!!!!!\n");
 
 
@@ -566,24 +542,24 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             aris::dynamic::s_pm_dot_pm(TM_b0_2_g0,TM_c0_2_b0,TM_c0_2_g0);
             aris::dynamic::s_pm_dot_pm(TM_c0_2_g0,TM_c1_2_c0,TM_c1_2_g0);
 
-            double c1_2_g0[6];
-            aris::dynamic::s_pm2pe(TM_c1_2_g0,c1_2_g0,"231");
+            double b1_2_g0[6];
+            aris::dynamic::s_pm2pe(TM_c1_2_g0,b1_2_g0,"231");
             //rt_printf("c1_2_g0  %f %f %f \n",b1_2_g0[3],b1_2_g0[4],b1_2_g0[5]);
 
-            waistEnd=asin(sin(c1_2_g0[5]))+adjPitch;//decrease the angle
+            waistEnd=asin(sin(b1_2_g0[5]));
 
 
             // body 2 c0  -->ok for RobotIX
             double body_2_c1[6];
             double body_2_c0[6];
             double bodyOffset[3];
-            g.GetBodyOffsetRobotIX(c1_2_g0[5],c1_2_g0[4],bodyOffset);//here use the last imu value to adjust body , or else use the next imu value to do this.
+            g.GetBodyOffsetRobotIX(b1_2_g0[5],b1_2_g0[4],bodyOffset);//here use the last imu value to adjust body , or else use the next imu value to do this.
             body_2_c1[0]=0+bodyOffset[0];//+offset
             body_2_c1[1]=-stdLegPee2B[1]+bodyOffset[1];//0.85+offset
             body_2_c1[2]=0+bodyOffset[2];//+offset
             body_2_c1[3]=0;
             body_2_c1[4]=0;
-            body_2_c1[5]=-adjPitch;
+            body_2_c1[5]=0;
 
 
             aris::dynamic::s_pm_dot_pnt(TM_c1_2_c0,body_2_c1,body_2_c0);
@@ -775,7 +751,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
             for (int i=0;i<6;i++)
             {
                 //            if(force[i]<-50&&force[i]>-200)
-                if(force[i]<-ForceTDvalue)
+                if(force[i]<-50)
                     isInTrans[i]=true;
                 else
                     isInTrans[i]=false;
@@ -873,38 +849,6 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         robot.SetPeb(bodyPeeForRobotIX,beginMak,"231");
         robot.SetWa(waistAngle);
         robot.SetPee(config_2_c0.LegPee,beginMak);
-
-
-        //length limitation
-
-
-        double ScrewIn[18];double ScrewInFinal[18];
-        memset(ScrewIn,0,sizeof(double)*18);
-
-        robot.GetPin(ScrewIn);
-
-        memcpy(ScrewInFinal,ScrewIn,sizeof(double)*18);
-        bool isReset;
-        isReset=SetScrewLimits(ScrewIn,ScrewInFinal);
-         if(isReset==true)
-        {
-
-            robot.SetPin(ScrewInFinal);
-
-        }
-
-        int in_2_count;
-        in_2_count=11556181;
-
-//        for(int i=0;i<6;i++)
-//            rt_printf("ScrewIn %f %f %f\n",ScrewIn[i*3],ScrewIn[i*3+1],ScrewIn[i*3+2]);
-//        for(int i=0;i<6;i++)
-//            rt_printf("ScrewFinal %f %f %f\n",ScrewInFinal[i*3],ScrewInFinal[i*3+1],ScrewInFinal[i*3+2]);
-//        for(int i=0;i<6;i++)
-//            rt_printf("Count %f %f %f\n",in_2_count*ScrewInFinal[i*3],in_2_count*ScrewInFinal[i*3+1],in_2_count*ScrewInFinal[i*3+2]);
-
-
-//        //
 
         stepCount+=1;
 
@@ -1343,34 +1287,6 @@ void parseVision(const std::string &cmd, const std::map<std::string, std::string
     cout<<"parse finished"<<endl;
 }
 
-bool SetScrewLimits(double* ScrewIn,double* ScrewInFinal)
-{
-
-    bool isChanged=false;
-
-    for(int i=0;i<18;i++)
-    {
-        if(ScrewIn[i]>=ScrewUpLimit[i]-ScrewMargin)
-        {
-            ScrewInFinal[i]=ScrewUpLimit[i]-ScrewMargin;
-            isChanged=true;
-        }
-        else if(ScrewIn[i]<=ScrewDownLimit[i]+ScrewMargin)
-        {
-            ScrewInFinal[i]=ScrewDownLimit[i]+ScrewMargin;
-            isChanged=true;
-        }
-        else
-        {
-            ScrewInFinal[i]=ScrewIn[i];
-        }
-
-    }
-    return isChanged;
-
-}
-
-
 
 
 GaitGenerator::GaitGenerator()
@@ -1487,7 +1403,7 @@ bool GaitGenerator::GenerateTraj(const int count, const int totalCount,WalkGaitP
         for (int i=0;i<6;i++)
         {
             //            if(force[i]<-50&&force[i]>-200)
-            if(force[i]<-ForceTDvalue)
+            if(force[i]<-50)
                 isInTrans[i]=true;
             else
                 isInTrans[i]=false;
@@ -1839,7 +1755,7 @@ void GaitGenerator::GetBodyOffsetRobotIX(const double pitch, const double roll, 
     // only for test
     offset[0]=-stdLegPee2B[1]*sin(roll);
     offset[1]=0.0;
-    offset[2]=(stdLegPee2B[1])*tan(pitch);// not sure depend on robot elevation
+    offset[2]=(stdLegPee2B[1]-0.3)*tan(pitch);// not sure depend on robot elevation
     rt_printf("offset %f %f %f\n",offset[0],offset[1],offset[2]);
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)

@@ -80,7 +80,7 @@ void parseForce(const std::string &cmd, const std::map<std::string, std::string>
 void parseIMU(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
-
+bool SetScrewLimits(double* plannedIn,double* changedIn);
 
 void parseGoSlopeVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseGoSlopeVision2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
