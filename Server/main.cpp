@@ -501,7 +501,7 @@ int main(int argc, char *argv[])
 {
    //kinect2.Start();
 
-    VersatileGait::startLogDataThread();
+   // VersatileGait::startLogDataThread();
     std::string xml_address;
 
     if (argc <= 1)
