@@ -27,13 +27,7 @@ using namespace std;
 
 using namespace aris::core;
 
-double feetPosi[18] =
-{ -0.3,  -0.9, -0.65,
-  -0.45, -0.9,  0,
-  -0.3,  -0.9,  0.65,
-  0.3,  -0.9, -0.65,
-  0.45, -0.9,  0,
-  0.3,   -0.9,  0.65 };
+
 
 Kinect2Sensor::KINECT2 kinect2;
 
@@ -551,6 +545,7 @@ int main(int argc, char *argv[])
     rs.addCmd("vis",VersatileGait::parseVision,VersatileGait::GoSlopeByVisionFast2);
 
     rs.addCmd("gsvf2",VersatileGait::parseGoSlopeVisionFast2,VersatileGait::GoSlopeByVisionFast2);
+    rs.addCmd("pitch",VersatileGait::parsePitch,VersatileGait::GoSlopeByVisionFast2);
 
     rs.open();
 

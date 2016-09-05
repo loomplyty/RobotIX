@@ -79,12 +79,11 @@ void parseAdjustSlope(const std::string &cmd, const std::map<std::string, std::s
 void parseForce(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseIMU(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+void parsePitch(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
 bool SetScrewLimits(double* plannedIn,double* changedIn);
 
-void parseGoSlopeVision(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
-void parseGoSlopeVision2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
-void parseGoSlopeVisionFast2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
+  void parseGoSlopeVisionFast2(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 
 void parseGoSlopeHuman(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
 void parseGoSlopeFast(const std::string &cmd, const std::map<std::string, std::string> &params, aris::core::Msg &msg);
