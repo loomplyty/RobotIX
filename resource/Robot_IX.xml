@@ -765,7 +765,7 @@
                 <wks_param type="group">
                     <totalCount abbreviation="t" type="int" default="3000"/>
                     <distance abbreviation="d" type="double" default="0"/>
-                    <height abbreviation="h" type="double" default="0.08"/>
+                    <height abbreviation="h" type="double" default="0.065"/>
                     <lateral abbreviation="l" type="double" default="0"/>
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>

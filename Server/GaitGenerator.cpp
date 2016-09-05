@@ -19,7 +19,7 @@ float gridMapBuff[400][400];
 
 const int Leg2Force[6]{0,1,2,3,4,5};
 
-const double stdLegPee2B[18]=
+static double stdLegPee2B[18]=
 {  -0.3,-0.99,-0.55,
    -0.45,-0.99,0,
    -0.3,-0.99,0.55,
@@ -34,7 +34,7 @@ const double stdLegPee2B[18]=
 //   0.45,-0.99,0,
 //   0.45,-0.99,0.65
 //};//change 0.85 to std offset height
-const double stdLegPee2C[18]=
+static double stdLegPee2C[18]=
 {  -0.3,0,-0.55,
    -0.45,0,0,
    -0.3,0,0.55,
@@ -321,7 +321,45 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
 
             euler[0]=0;// yaw being zero
             euler[1]=asin(sin(euler[1]));
-            euler[2]=asin(sin(euler[2]));
+            euler[2]=asin(sin(euler[2]));//pitch
+
+            //pitch is minus when moving forward
+            if(euler[2]<0)
+            {
+                stdLegPee2B[6]=-0.3-0.2*abs(sin(euler[2]));
+                stdLegPee2B[15]=0.3+0.2*abs(sin(euler[2]));
+                stdLegPee2C[6]=-0.3-0.2*abs(sin(euler[2]));
+                stdLegPee2C[15]=0.3+0.2*abs(sin(euler[2]));
+
+
+                stdLegPee2B[0]=-0.3;
+                stdLegPee2B[9]=0.3;
+                stdLegPee2C[0]=-0.3;
+                stdLegPee2C[9]=0.3;
+
+            }
+            else
+            {
+                stdLegPee2B[6]=-0.3;
+                stdLegPee2B[15]=0.3;
+                stdLegPee2C[6]=-0.3;
+                stdLegPee2C[15]=0.3;
+
+                stdLegPee2B[0]=-0.3-0.2*abs(sin(euler[2]));
+                stdLegPee2B[9]=0.3+0.2*abs(sin(euler[2]));
+                stdLegPee2C[0]=-0.3-0.2*abs(sin(euler[2]));
+                stdLegPee2C[9]=0.3+0.2*abs(sin(euler[2]));
+            }
+
+            stdLegPee2B[5]=0.1*sin(euler[2]);
+            stdLegPee2B[14]=0.1*sin(euler[2]);
+            stdLegPee2C[5]=0.1*sin(euler[2]);
+            stdLegPee2C[14]=0.1*sin(euler[2]);
+
+            rt_printf("std legpee2c\n");
+            for (int i=0;i<6;i++)
+                rt_printf("%f %f %f\n",stdLegPee2C[i*3],stdLegPee2C[i*3+1],stdLegPee2C[i*3+2]);
+
 
 
 
@@ -1006,8 +1044,8 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         bool isReset;
         isReset=SetScrewLimits(ScrewIn,ScrewInFinal);
 
-//                //for test
-//                isReset=false;
+        //                //for test
+        //                isReset=false;
 
         if(isReset==true)
         {
@@ -1056,7 +1094,7 @@ int GoSlopeByVisionFast2(aris::dynamic::Model &model, const aris::dynamic::PlanP
         }
 
         //*** log data during walking period***//
-        if(stepCount%10==0)
+        if(stepCount%500==0)
         {
             robotData data;
             //imu
@@ -1610,7 +1648,7 @@ void GaitGenerator::GetBodyOffsetRobotIX(const double pitch, const double roll, 
     // only for test
     offset[0]=-stdLegPee2B[1]*sin(roll);
     offset[1]=0.0;
-    offset[2]=(stdLegPee2B[1])*tan(pitch);// not sure depend on robot elevation
+    offset[2]=(stdLegPee2B[1]-0.2)*tan(pitch);// not sure depend on robot elevation
     rt_printf("offset %f %f %f\n",offset[0],offset[1],offset[2]);
 }
 void GaitGenerator::GetPlaneFromStanceLegs(const double *stanceLegs, double *normalVector)
