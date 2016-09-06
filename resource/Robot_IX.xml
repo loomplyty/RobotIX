@@ -770,7 +770,14 @@
                     <mode abbreviation="m" type="int" default="1"/>
                   </wks_param>
             </gsvf2>
-
+            <gs35 default="wks_param">
+                <wks_param type="group">
+                    <totalCount abbreviation="t" type="int" default="3000"/>
+                    <distance abbreviation="d" type="double" default="0"/>
+                    <height abbreviation="h" type="double" default="0.065"/>
+                    <mode abbreviation="m" type="int" default="1"/>
+                  </wks_param>
+            </gs35>
             <pitch default="pitch_param">
                 <pitch_param type="group">
                     <pitch abbreviation="p" type="double" default="-0.1"/>
